@@ -12,6 +12,7 @@ type(
     OperationList []OperationOne
     SteamCh chan OperationOne
     ScapeDataCh chan ScapeDataD
+    ErrCh chan error
     DoneCh chan struct{}
     ScapeCheck bool
   }
