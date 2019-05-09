@@ -1,12 +1,7 @@
 package determine
+
 import ( "time")
-         // "fmt")
-//------------
-/*func (d *DrillDataType) Read() error{
-    fmt.Println("1")
-    return nil
-}
-*/
+
 type( 
   DrillDataType struct{
     OperationList []OperationOne
@@ -14,7 +9,8 @@ type(
     ScapeDataCh chan ScapeDataD
     ErrCh chan error
     DoneCh chan struct{}
-    ScapeCheck bool
+    ScapeFullData bool
+    OneMoreScape ScapeDataD
   }
 
   OperationtypeD [20] string;
@@ -28,6 +24,7 @@ type(
    6 - Работа т/с
    7 - Бурение ротор
    8 - Бурение (слайд) 
+   9 - ПЗР
   */
   ScapeDataD [20] float32;
   /*0-Дата Время
