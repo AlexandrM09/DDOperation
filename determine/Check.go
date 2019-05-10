@@ -16,12 +16,10 @@ type (
 	Check2 struct{}
 )
 
-func (o *Check2) check(d *DrillDataType) string {
-	for{
-	if !d.ScapeFullData {d.OneMoreScape=<-d.ScapeDataCh}
-	return ""
-	}
+func (o *Check2) check(d *DrillDataType) int {
+	var res int
+	res=-1
+	return res
+	
 }
-func (o *Check2) getname() string {
-	return "Промывка"
-}
+

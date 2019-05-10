@@ -9,8 +9,12 @@ type(
     ScapeDataCh chan ScapeDataD
     ErrCh chan error
     DoneCh chan struct{}
+    DoneScapeCh chan struct{}
     ScapeFullData bool
-    OneMoreScape ScapeDataD
+    LastScapeData ScapeDataD
+    ScapeData ScapeDataD
+    ActiveOperation int
+    Operationtype OperationtypeD
   }
 
   OperationtypeD [20] string;
@@ -26,7 +30,9 @@ type(
    8 - Бурение (слайд) 
    9 - ПЗР
   */
-  ScapeDataD [20] float32;
+  ScapeDataD  struct{
+    Time time.Time
+    Values [20]float32;
   /*0-Дата Время
    1-Время Дата
    2=Глубина забоя
@@ -40,8 +46,9 @@ type(
    10=Число свечей
    11=Положение долота по свечам
   */ 
+  }
   OperationOne struct{
-  start,stop time.Time
+  
   startData,stopData,maxData,minData,sum,agv ScapeDataD
   //buf_count,count int;
   //buf:array [0..bufSize] of ageooscape_data;

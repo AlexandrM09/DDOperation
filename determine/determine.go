@@ -8,8 +8,7 @@ package determine
 type (
 	listoperation []string
 	determineOne  interface {
-		check(d *DrillDataType) string
-		getname() string
+		check(d *DrillDataType) int
 	}
 	SteamI interface {
 		Read(d *DrillDataType)
@@ -25,44 +24,72 @@ type (
 func (dt *Determine) Start() error {
 	go dt.Steam.Read(dt.Data)
 	//var err error
-	go func() { _ = dt.Run(dt.Data) }()
-	return nil
+    go  dt.Run()
+    return nil
 }
 
 // Main dispath function in list
-func (dt *Determine) Run(d *DrillDataType) error {
-	var resSt string
-	var n int
+func (dt *Determine) Run() {
+
+	var res int
+	defer func() {
+		close(dt.Data.ScapeDataCh)
+		close(dt.Data.SteamCh)
+		close(dt.Data.ErrCh)
+		dt.Data.DoneScapeCh <- struct{}{}
+	}()
+
 	for {
-		resSt = ""
+		d := dt.Data
+		//resSt = ""
 		select {
 		case <-d.DoneCh:
 			{ //close all
-				return nil
+
+				dt.saveoperation()
+				return
 			}
-		case err := <-d.ErrCh:
-			return err
+		//case err := <-d.ErrCh:{return}
+
+		case d.ScapeData = <-d.ScapeDataCh:
+			{
+				d.LastScapeData = d.ScapeData
+				if d.ActiveOperation >= 0 {
+					res = dt.ListCheck[d.ActiveOperation].check(dt.Data)
+				} else {
+					res = -1
+				}
+
+				if res == -1 {
+
+					for i := 0; i < len(dt.ListCheck) && (res == -1); i++ {
+						res = dt.ListCheck[i].check(dt.Data)
+					}
+				} // select operation
+				if res == -1 {
+					res = len(dt.ListCheck) - 1
+				}
+				switch {
+				case res == d.ActiveOperation:
+					{ //addDatatooperation
+						dt.addDatatooperation()
+					}
+				default:
+					{
+						d.ActiveOperation = res
+						if d.ActiveOperation >= 0 {
+							//saveoperation
+							dt.saveoperation()
+						}
+						//startnewoperation
+						dt.startnewoperation()
+					}
+				}
+			}
 		default:
-			for i := 0; i < len(dt.ListCheck) && (resSt == ""); i++ {
-				resSt = dt.ListCheck[i].check(dt.Data)
-			}
-			n = dt.findbyName(resSt)
-			if n >= 0 {
-				resSt = dt.ListCheck[n].check(dt.Data)
-			}
+
 		}
 	}
-}
-
-//find by name check
-func (dt *Determine) findbyName(s string) int {
-
-	for i := 1; i < len(dt.ListCheck); i++ {
-		if s == dt.ListCheck[i].getname() {
-			return i
-		}
-	}
-	return -1
 }
 
 // Create new List determine
@@ -70,6 +97,24 @@ func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 	return &Determine{Data: ds,
 		Steam:     sm,
 		ListCheck: []determineOne{}}
+}
+
+func (dt *Determine) addDatatooperation() {
+	//
+}
+func (dt *Determine) startnewoperation() {
+
+	dt.Data.OperationList = append(dt.Data.OperationList,
+		OperationOne{Operaton: dt.Data.Operationtype[dt.Data.ActiveOperation], startData: dt.Data.ScapeData})
+
+}
+func (dt *Determine) saveoperation() {
+	//
+	len := len(dt.Data.OperationList)
+	if len == 0 {
+		return
+	}
+	dt.Data.OperationList[len-1].stopData = dt.Data.LastScapeData
 }
 
 func GetList() listoperation {
