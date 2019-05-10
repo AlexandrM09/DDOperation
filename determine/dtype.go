@@ -17,7 +17,7 @@ type(
     Operationtype OperationtypeD
   }
 
-  OperationtypeD [20] string;
+  OperationtypeD [15] string;
   /*
    0 - Бурение
    1 - Наращивание
@@ -53,5 +53,6 @@ type(
   //buf_count,count int;
   //buf:array [0..bufSize] of ageooscape_data;
   Operaton string
+  Params string
   }
 )

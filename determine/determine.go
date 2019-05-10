@@ -8,7 +8,8 @@ package determine
 type (
 	listoperation []string
 	determineOne  interface {
-		check(d *DrillDataType) int
+		Check(d *DrillDataType) int
+		// CheckOne(d *DrillDataType) int
 	}
 	SteamI interface {
 		Read(d *DrillDataType)
@@ -24,8 +25,8 @@ type (
 func (dt *Determine) Start() error {
 	go dt.Steam.Read(dt.Data)
 	//var err error
-    go  dt.Run()
-    return nil
+	go dt.Run()
+	return nil
 }
 
 // Main dispath function in list
@@ -55,7 +56,7 @@ func (dt *Determine) Run() {
 			{
 				d.LastScapeData = d.ScapeData
 				if d.ActiveOperation >= 0 {
-					res = dt.ListCheck[d.ActiveOperation].check(dt.Data)
+					res = dt.ListCheck[d.ActiveOperation].Check(dt.Data)
 				} else {
 					res = -1
 				}
@@ -63,7 +64,7 @@ func (dt *Determine) Run() {
 				if res == -1 {
 
 					for i := 0; i < len(dt.ListCheck) && (res == -1); i++ {
-						res = dt.ListCheck[i].check(dt.Data)
+						res = dt.ListCheck[i].Check(dt.Data)
 					}
 				} // select operation
 				if res == -1 {
@@ -94,9 +95,11 @@ func (dt *Determine) Run() {
 
 // Create new List determine
 func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
+
 	return &Determine{Data: ds,
 		Steam:     sm,
-		ListCheck: []determineOne{}}
+		ListCheck: []determineOne{&Check0{}, &Check2{}, &Check9{}},
+	}
 }
 
 func (dt *Determine) addDatatooperation() {
@@ -115,6 +118,9 @@ func (dt *Determine) saveoperation() {
 		return
 	}
 	dt.Data.OperationList[len-1].stopData = dt.Data.LastScapeData
+}
+func (dt *Determine) Stop() {
+	dt.Data.DoneCh <- struct{}{}
 }
 
 func GetList() listoperation {

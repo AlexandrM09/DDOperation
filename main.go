@@ -17,9 +17,19 @@ func main() {
 		DoneCh:          make(chan struct{}),
 		DoneScapeCh:     make(chan struct{}),
 		ActiveOperation: -1,
+		Operationtype:OperationtypeD{"Бурение",
+				"Наращивание",
+				"Промывка",
+				"Проработка",
+				"Подъем",
+				"Спуск",
+				"Работа т/с",
+				"Бурение (ротор)","Бурение (слайд)","ПЗР","","","","","",}
 	}
+	 
 
 	tm := dtm.NewDetermine(&sr, &dtm.SteamRND{})
 	_ = tm.Start()
 	<-time.After(200 * time.Millisecond)
+	tm.Stop()
 }
