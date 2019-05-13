@@ -4,6 +4,8 @@ package determine
     return nil
 }
 */
+import (//"time"
+		"github.com/sirupsen/logrus")
 
 type (
 	listoperation []string
@@ -23,6 +25,11 @@ type (
 )
 
 func (dt *Determine) Start() error {
+	dt.Data.Log.WithFields(logrus.Fields{
+		//"mode":   "[access_log]",
+		"logger": "LOGRUS",
+		//"Time" : time.Now().Format("dd.mm.yy hh:mm"),
+	}).Info("Start determine")
 	go dt.Steam.Read(dt.Data)
 	//var err error
 	go dt.Run()
