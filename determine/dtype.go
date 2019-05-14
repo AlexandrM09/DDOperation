@@ -19,7 +19,7 @@ type (
 		ScapeData       ScapeDataD
 		ActiveOperation int
 		Operationtype   OperationtypeD
-		Log    *logrus.Logger
+		Log             *logrus.Logger
 	}
 
 	OperationtypeD [15]string
@@ -60,3 +60,12 @@ type (
 		Params   string
 	}
 )
+
+var DrillOperationConst = [15]string{"Бурение",
+	"Наращивание",
+	"Промывка",
+	"Проработка",
+	"Подъем",
+	"Спуск",
+	"Работа т/с",
+	"Бурение (ротор)", "Бурение (слайд)", "ПЗР", "", "", "", "", ""}

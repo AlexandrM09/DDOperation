@@ -18,14 +18,7 @@ func main() {
 		DoneCh:          make(chan struct{}),
 		DoneScapeCh:     make(chan struct{}),
 		ActiveOperation: -1,
-		Operationtype:dtm.OperationtypeD{"Бурение",
-				"Наращивание",
-				"Промывка",
-				"Проработка",
-				"Подъем",
-				"Спуск",
-				"Работа т/с",
-				"Бурение (ротор)","Бурение (слайд)","ПЗР","","","","",""},
+		Operationtype:dtm.DrillOperationConst,
 		Log:CreateLog(),		
 	}
 	 

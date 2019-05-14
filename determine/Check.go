@@ -17,6 +17,7 @@ type (
 	Check2 struct{}
 	Check9 struct{}
 )
+//  
 // Check Drill
 func checkOne0(d *DrillDataType) int {
 	var res int
@@ -31,7 +32,7 @@ func (o *Check0) Check(d *DrillDataType) int {
 	return checkOne0(d)
 	
 }
-// Check Flow
+//determination fluid flow
 func CheckOne2(d *DrillDataType) int {
 	var res int
 	res=-1
