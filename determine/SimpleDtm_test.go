@@ -1,6 +1,7 @@
 package determine
 
 import (
+	//"sync"
 	"fmt"
 	"os"
 	"testing"
@@ -12,7 +13,7 @@ import (
 // simle steam
 type SteamSmpl struct{}
 
-func (St *SteamSmpl) Read(d *DrillDataType) {
+func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	//nothing
 	v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	//flow data
@@ -30,11 +31,11 @@ func (St *SteamSmpl) Read(d *DrillDataType) {
 			ScapeData.Values = v3
 		}
 		fmt.Println("Sending ScapeData ", fmt.Sprint(i))
-		d.ScapeDataCh <- ScapeData
+		ScapeDataCh <- ScapeData
 		ScapeData.Time = ScapeData.Time.Add(time.Second)
 		<-time.After(10 * time.Millisecond)
 	}
-	d.DoneCh <- struct{}{}
+	DoneCh <- struct{}{}
 	return
 }
 
@@ -50,20 +51,37 @@ func TestSimpleDtm(t *testing.T) {
 		ActiveOperation: -1,
 		Operationtype:   DrillOperationConst,
 		Log:             CLog(),
+		//mu:&sync.RWMutex{},
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
 	_ = tm.Start()
-	<-time.After(1000 * time.Millisecond)
+	<-time.After(2000 * time.Millisecond)
 	fmt.Println("count operation ", len(tm.Data.OperationList))
 	fmt.Println("Start printing OperationList")
 
 	for i := 0; i < len(tm.Data.OperationList); i++ {
-		fmt.Println(tm.Data.OperationList[i].Operaton)
+		fmt.Printf("%s | %s |%s \n", tm.Data.OperationList[i].startData.Time.Format("2006-01-02 15:04:05"),
+			tm.Data.OperationList[i].stopData.Time.Format("15:04:05"),
+			tm.Data.OperationList[i].Operaton)
 	}
 	if !(len(tm.Data.OperationList) == 3) {
 		t.Errorf("the number of operations does not match")
 	}
+	neadres := [3]string{"ПЗР", "Промывка", "Бурение"}
+	var dd OperationOne
+	var n int64
+	for i := 0; i < 3; i++ {
+		dd=tm.Data.OperationList[i]
+		if !(neadres[i] == dd.Operaton) {
+			t.Errorf("incorrect operation definition")
+		}
+		n=int64(dd.stopData.Time.Sub(dd.startData.Time)/ time.Second)
+		if !(n==9){
+			t.Errorf("incorrect time duration %v",n)
+		} 
+	}
+
 }
 
 func CLog() *logrus.Logger {

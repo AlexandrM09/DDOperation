@@ -6,6 +6,7 @@ import (
 	"os"
 	dtm "./determine"
 	"github.com/sirupsen/logrus"
+//	"sync"
 )
 
 func main() {
@@ -19,7 +20,8 @@ func main() {
 		DoneScapeCh:     make(chan struct{}),
 		ActiveOperation: -1,
 		Operationtype:dtm.DrillOperationConst,
-		Log:CreateLog(),		
+		Log:CreateLog(),
+		
 	}
 	 
 

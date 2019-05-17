@@ -1,6 +1,7 @@
 package determine
 
 import (
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -20,6 +21,7 @@ type (
 		ActiveOperation int
 		Operationtype   OperationtypeD
 		Log             *logrus.Logger
+		mu *sync.RWMutex
 	}
 
 	OperationtypeD [15]string

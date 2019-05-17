@@ -7,11 +7,12 @@ package determine
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 )
 
-var CheckInt = [10]int{0,0,1, 0, 0, 0, 0, 0, 0, 2}
+var CheckInt = [10]int{0, 0, 1, 0, 0, 0, 0, 0, 0, 2}
 
 type (
 	listoperation []string
@@ -20,7 +21,7 @@ type (
 		// CheckOne(d *DrillDataType) int
 	}
 	SteamI interface {
-		Read(d *DrillDataType)
+		Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{})
 	}
 	Determine struct {
 		Data        *DrillDataType
@@ -37,12 +38,13 @@ func (dt *Determine) Start() error {
 		"logger": "LOGRUS",
 		//"Time" : time.Now().Format("dd.mm.yy hh:mm"),
 	}).Info("Start determine")
+	dt.Data.mu = &sync.RWMutex{}
 	go dt.Run()
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		//"Time" : time.Now().Format("dd.mm.yy hh:mm"),
 	}).Info("Start Steam")
-	go dt.Steam.Read(dt.Data)
+	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh)
 	return nil
 }
 
@@ -77,7 +79,7 @@ func (dt *Determine) Run() {
 		case d.ScapeData = <-d.ScapeDataCh:
 			{
 				fmt.Println("after read Scapedata")
-				d.LastScapeData = d.ScapeData
+
 				if d.ActiveOperation >= 0 {
 					fmt.Println("Run ActiveCheck", fmt.Sprint(d.ActiveOperation))
 					res = dt.ListCheck[CheckInt[d.ActiveOperation]].Check(dt.Data)
@@ -118,6 +120,8 @@ func (dt *Determine) Run() {
 						dt.startnewoperation()
 					}
 				}
+
+				d.LastScapeData = d.ScapeData
 			}
 		default:
 
@@ -136,19 +140,23 @@ func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 }
 
 func (dt *Determine) addDatatooperation() {
-	//
+	//dt.Data.mu.Lock()
+	//defer dt.Data.mu.Unlock()
 }
 func (dt *Determine) startnewoperation() {
-
+	dt.Data.mu.Lock()
+	defer dt.Data.mu.Unlock()
 	dt.Data.OperationList = append(dt.Data.OperationList,
 		OperationOne{Operaton: dt.Data.Operationtype[dt.Data.ActiveOperation], startData: dt.Data.ScapeData})
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
-		"Time":   dt.Data.ScapeData.Time.Format("dd.mm.yy hh:mm:ss"),
+		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Start operation " + dt.Data.Operationtype[dt.Data.ActiveOperation])
 }
 func (dt *Determine) saveoperation() {
 	//
+	dt.Data.mu.Lock()
+	defer dt.Data.mu.Unlock()
 	len := len(dt.Data.OperationList)
 	if len == 0 {
 		return
@@ -156,7 +164,7 @@ func (dt *Determine) saveoperation() {
 	dt.Data.OperationList[len-1].stopData = dt.Data.LastScapeData
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
-		"Time":   dt.Data.ScapeData.Time.Format("dd.mm.yy hh:mm:ss"),
+		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Stop and save  operation " + dt.Data.Operationtype[dt.Data.ActiveOperation])
 }
 func (dt *Determine) Stop() {
