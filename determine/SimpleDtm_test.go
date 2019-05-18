@@ -33,7 +33,7 @@ func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 		fmt.Println("Sending ScapeData ", fmt.Sprint(i))
 		ScapeDataCh <- ScapeData
 		ScapeData.Time = ScapeData.Time.Add(time.Second)
-		<-time.After(10 * time.Millisecond)
+		//<-time.After(10 * time.Millisecond)
 	}
 	DoneCh <- struct{}{}
 	return
@@ -55,8 +55,12 @@ func TestSimpleDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
-	_ = tm.Start()
-	<-time.After(2000 * time.Millisecond)
+	_ = tm.Start(15)
+	err:=tm.Wait()
+if err != nil{
+	t.Errorf("error:time limit exceeded")
+} 
+	//<-time.After(2000 * time.Millisecond)
 	fmt.Println("count operation ", len(tm.Data.OperationList))
 	fmt.Println("Start printing OperationList")
 
@@ -71,15 +75,16 @@ func TestSimpleDtm(t *testing.T) {
 	neadres := [3]string{"ПЗР", "Промывка", "Бурение"}
 	var dd OperationOne
 	var n int64
-	for i := 0; i < 3; i++ {
-		dd=tm.Data.OperationList[i]
+	 
+	for i := 0; i <  len(tm.Data.OperationList); i++ {
+		dd = tm.Data.OperationList[i]
 		if !(neadres[i] == dd.Operaton) {
 			t.Errorf("incorrect operation definition")
 		}
-		n=int64(dd.stopData.Time.Sub(dd.startData.Time)/ time.Second)
-		if !(n==9){
-			t.Errorf("incorrect time duration %v",n)
-		} 
+		n = int64(dd.stopData.Time.Sub(dd.startData.Time) / time.Second)
+		if !(n == 9) {
+			t.Errorf("incorrect time duration %v", n)
+		}
 	}
 
 }

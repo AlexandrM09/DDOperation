@@ -6,8 +6,10 @@ package determine
 */
 
 import (
+	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -24,15 +26,42 @@ type (
 		Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{})
 	}
 	Determine struct {
+		wg          *sync.WaitGroup
 		Data        *DrillDataType
 		Steam       SteamI
 		ListCheck   []determineOne
 		activecheck determineOne
+		waitTime    int
 	}
 )
 
-func (dt *Determine) Start() error {
+func (dt *Determine) Wait() error {
+	ch := make(chan struct{})
+	go func(ch chan struct{}) {
+		fmt.Println("!!!!!!before wg.Wait()")
+		dt.wg.Wait()
+		fmt.Println("!!!!!!ch <- struct{}{}")
+		ch <- struct{}{}
+		fmt.Println("!!!!!!after wg.Wait()")
+	}(ch)
+	for {
+		select {
+		case <-ch:
+			return nil
+		case <-time.After(time.Duration(dt.waitTime) * time.Second):
+			{
+				//
+				return errors.New("time limit exceeded")
+				dt.Data.DoneCh<-struct{}{}
+			}
+		}
+	}
+}
 
+func (dt *Determine) Start(wt int) error {
+	dt.waitTime = wt
+	dt.wg = &sync.WaitGroup{}
+	dt.wg.Add(1)
 	//var err error
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
@@ -53,6 +82,7 @@ func (dt *Determine) Run() {
 
 	var res int
 	defer func() {
+		dt.wg.Done()
 		dt.Data.Log.WithFields(logrus.Fields{
 			"logger": "LOGRUS",
 		}).Info("Done")
@@ -61,6 +91,7 @@ func (dt *Determine) Run() {
 		close(dt.Data.SteamCh)
 		close(dt.Data.ErrCh)
 		dt.Data.DoneScapeCh <- struct{}{}
+		
 	}()
 
 	for {
@@ -144,6 +175,7 @@ func (dt *Determine) addDatatooperation() {
 	//defer dt.Data.mu.Unlock()
 }
 func (dt *Determine) startnewoperation() {
+
 	dt.Data.mu.Lock()
 	defer dt.Data.mu.Unlock()
 	dt.Data.OperationList = append(dt.Data.OperationList,

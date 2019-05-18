@@ -26,10 +26,8 @@ func main() {
 	 
 
 	tm := dtm.NewDetermine(&sr, &dtm.SteamRND{})
-	_ = tm.Start()
-	<-time.After(200 * time.Millisecond)
-	tm.Stop()
-	<-time.After(200 * time.Millisecond)
+	_ = tm.Start(5)
+	_=tm.Wait()
 }
 
 func CreateLog() *logrus.Logger{
