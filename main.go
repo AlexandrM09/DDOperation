@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"time"
+	//"time"
 	"os"
 	dtm "./determine"
 	"github.com/sirupsen/logrus"
@@ -24,10 +24,11 @@ func main() {
 		
 	}
 	 
-
+	
 	tm := dtm.NewDetermine(&sr, &dtm.SteamRND{})
 	_ = tm.Start(5)
 	_=tm.Wait()
+	
 }
 
 func CreateLog() *logrus.Logger{

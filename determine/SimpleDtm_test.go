@@ -39,6 +39,22 @@ func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	return
 }
 
+//test steam for csv files
+func TestSteamCsv(t *testing.T) {
+	ScapeDataCh := make(chan ScapeDataD)
+	DoneCh := make(chan struct{})
+	SteamCsv := &SteamCsv{}
+	go SteamCsv.Read(ScapeDataCh, DoneCh)
+	fmt.Printf("start")
+	for Scd := range ScapeDataCh {
+		fmt.Printf("result: %s | %+v \n",
+			Scd.Time.Format("2006-01-02 15:04:05"),
+			Scd.Values)
+	}
+	fmt.Printf("finish")
+
+}
+
 //very simple determine test
 func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start test")
@@ -56,10 +72,10 @@ func TestSimpleDtm(t *testing.T) {
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
 	_ = tm.Start(15)
-	err:=tm.Wait()
-if err != nil{
-	t.Errorf("error:time limit exceeded")
-} 
+	err := tm.Wait()
+	if err != nil {
+		t.Errorf("error:time limit exceeded")
+	}
 	//<-time.After(2000 * time.Millisecond)
 	fmt.Println("count operation ", len(tm.Data.OperationList))
 	fmt.Println("Start printing OperationList")
@@ -75,8 +91,8 @@ if err != nil{
 	neadres := [3]string{"ПЗР", "Промывка", "Бурение"}
 	var dd OperationOne
 	var n int64
-	 
-	for i := 0; i <  len(tm.Data.OperationList); i++ {
+
+	for i := 0; i < len(tm.Data.OperationList); i++ {
 		dd = tm.Data.OperationList[i]
 		if !(neadres[i] == dd.Operaton) {
 			t.Errorf("incorrect operation definition")
