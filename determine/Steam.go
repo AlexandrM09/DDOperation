@@ -80,10 +80,11 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 		ScapeData.Time, _ = getTime(line)
 		//fmt.Printf("Time= %v \n", ScapeData.Time)
 		len := len(line)
-		fmt.Printf("line len= %d \n", len)
+		fmt.Printf("line len= %d , %v\n", len,line)
 		for i := 2; i < 20; i++ {
 
 			if (sH[i] > 2) && (len > sH[i]) {
+				fmt.Printf("index %d",sH[i])
 				fmt.Printf("read float value= %v \n", line[sH[i]])
 				if f1, err := strconv.ParseFloat(line[sH[i]], 32); err == nil {
 					ScapeData.Values[i] = float32(f1)
@@ -105,7 +106,7 @@ type scapeHeader [20]int
 
 func parseheader(record []string, sH *scapeHeader) error {
 	fmt.Printf("parse header %v, len= %d\n", record, len(record))
-	h := [20]string{"", "", "D101", "D115", "D300", "D1001", "D202", "D200", "D1300", "D1200", "D111", "D110", "", "", "", "", "", "", "", ""}
+	h := [20]string{"", "", "S101", "S115", "S300", "S1001", "S202", "S200", "S1300", "S1200", "S111", "S110", "", "", "", "", "", "", "", ""}
 	for i := 2; i < 20; i++ {
 		if h[i] != "" {
 			n := findColumn(h[i], record)
