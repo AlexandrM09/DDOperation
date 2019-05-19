@@ -1,13 +1,12 @@
 package determine
 
 import (
-	"bufio"
+	"archive/zip"
 	"encoding/csv"
 	"errors"
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -32,20 +31,31 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	//v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	var ScapeData ScapeDataD
 	sH := scapeHeader{}
+
+	r, err := zip.OpenReader("../source/source.zip")
+	if err != nil {
+		log.Fatal("unpacking zip file", err)
+	}
+	defer r.Close()
+
+	csvFile := r.File[0]
 	fmt.Printf("open csv \n")
-	csvFile, errf := os.Open("../source/03261652_small.csv")
+	//csvFile, errf := os.Open("../source/03261652_small.csv")
+	rc, errf := csvFile.Open()
+	defer rc.Close()
 	if errf != nil {
 		log.Fatal("not open, ", errf)
 	}
 	fmt.Printf("create new reader \n")
-	reader := csv.NewReader(bufio.NewReader(csvFile))
+	//reader := csv.NewReader(bufio.NewReader(csvFile))
+	reader := csv.NewReader(rc)
 	reader.Comma = ';'
 	n := 0
 	fmt.Printf("start for \n")
 	for {
 		fmt.Printf("n= %v \n", n)
 		line, error := reader.Read()
-		if (error == io.EOF) || (n > 5) {
+		if error == io.EOF { //|| (n > 5)
 			close(ScapeDataCh)
 			fmt.Printf("close(ScapeDataCh) \n")
 			break
@@ -80,11 +90,11 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 		ScapeData.Time, _ = getTime(line)
 		//fmt.Printf("Time= %v \n", ScapeData.Time)
 		len := len(line)
-		fmt.Printf("line len= %d , %v\n", len,line)
+		fmt.Printf("line len= %d , %v\n", len, line)
 		for i := 2; i < 20; i++ {
 
 			if (sH[i] > 2) && (len > sH[i]) {
-				fmt.Printf("index %d",sH[i])
+				fmt.Printf("index %d", sH[i])
 				fmt.Printf("read float value= %v \n", line[sH[i]])
 				if f1, err := strconv.ParseFloat(line[sH[i]], 32); err == nil {
 					ScapeData.Values[i] = float32(f1)

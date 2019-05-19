@@ -46,13 +46,22 @@ func TestSteamCsv(t *testing.T) {
 	SteamCsv := &SteamCsv{}
 	go SteamCsv.Read(ScapeDataCh, DoneCh)
 	fmt.Printf("start")
+	//data := []byte("Hello Bold!")
+	file, err := os.Create("operation.txt")
+	if err != nil {
+		t.Errorf("Unable to create file")
+
+	}
+	defer file.Close()
+	s := ""
 	for Scd := range ScapeDataCh {
-		fmt.Printf("result: %s | %+v \n",
+		s = fmt.Sprintf(" %s | %+v \r\n",
 			Scd.Time.Format("2006-01-02 15:04:05"),
 			Scd.Values)
+		_, _ = file.WriteString(s)
 	}
 	fmt.Printf("finish")
-
+	//
 }
 
 //very simple determine test
