@@ -41,9 +41,10 @@ func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 
 //test steam for csv files
 func TestSteamCsv(t *testing.T) {
+	var Scd ScapeDataD
 	ScapeDataCh := make(chan ScapeDataD)
 	DoneCh := make(chan struct{})
-	SteamCsv := &SteamCsv{}
+	SteamCsv := &SteamCsv{FilePath:"../source/source.zip"}
 	go SteamCsv.Read(ScapeDataCh, DoneCh)
 	fmt.Printf("start")
 	//data := []byte("Hello Bold!")
@@ -54,14 +55,57 @@ func TestSteamCsv(t *testing.T) {
 	}
 	defer file.Close()
 	s := ""
-	for Scd := range ScapeDataCh {
-		s = fmt.Sprintf(" %s | %+v \r\n",
-			Scd.Time.Format("2006-01-02 15:04:05"),
-			Scd.Values)
-		_, _ = file.WriteString(s)
+	for {
+		select {
+		case <-DoneCh:
+			{
+				fmt.Printf("finish")
+				return
+			}
+		case Scd = <-ScapeDataCh:
+			{
+				s = fmt.Sprintf(" %s | %+v \r\n",
+					Scd.Time.Format("2006-01-02 15:04:05"),
+					Scd.Values)
+				_, _ = file.WriteString(s)
+
+			}
+		}
 	}
-	fmt.Printf("finish")
-	//
+
+}
+
+func TestElementaryDtm(t *testing.T) {
+	fmt.Println("Start test")
+	file, errf := os.Create("operation.txt")
+	if errf != nil {
+		t.Errorf("Unable to create file")
+
+	}
+	defer file.Close()
+	sr := DrillDataType{OperationList: make([]OperationOne, 0),
+		SteamCh:         make(chan OperationOne),
+		ScapeDataCh:     make(chan ScapeDataD),
+		ErrCh:           make(chan error, 2),
+		DoneCh:          make(chan struct{}),
+		DoneScapeCh:     make(chan struct{}),
+		ActiveOperation: -1,
+		Operationtype:   DrillOperationConst,
+		Log:             CLog(),
+		//mu:&sync.RWMutex{},
+	}
+
+	tm := NewDetermine(&sr, &SteamCsv{FilePath:"../source/source.zip"})
+	_ = tm.Start(30)
+	err := tm.Wait()
+	if err != nil {
+		t.Errorf("error:time limit exceeded")
+	}
+	for i := 0; i < len(tm.Data.OperationList); i++ {
+		fmt.Fprintf(file,"%s | %s |%s \r\n", tm.Data.OperationList[i].startData.Time.Format("2006-01-02 15:04:05"),
+			tm.Data.OperationList[i].stopData.Time.Format("15:04:05"),
+			tm.Data.OperationList[i].Operaton)
+	}
 }
 
 //very simple determine test

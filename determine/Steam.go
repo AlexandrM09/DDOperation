@@ -20,10 +20,13 @@ func (St *SteamRND) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 }
 
 // Steam for csv example files
-type SteamCsv struct{}
+type SteamCsv struct {
+	FilePath string
+}
 
 func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	defer func() {
+		//fmt.Printf("DoneCh <- struct \n")
 		DoneCh <- struct{}{}
 
 	}()
@@ -32,14 +35,14 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	var ScapeData ScapeDataD
 	sH := scapeHeader{}
 
-	r, err := zip.OpenReader("../source/source.zip")
+	r, err := zip.OpenReader(St.FilePath) //"../source/source.zip"
 	if err != nil {
 		log.Fatal("unpacking zip file", err)
 	}
 	defer r.Close()
 
 	csvFile := r.File[0]
-	fmt.Printf("open csv \n")
+	//fmt.Printf("open csv \n")
 	//csvFile, errf := os.Open("../source/03261652_small.csv")
 	rc, errf := csvFile.Open()
 	defer rc.Close()
@@ -51,13 +54,13 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	reader := csv.NewReader(rc)
 	reader.Comma = ';'
 	n := 0
-	fmt.Printf("start for \n")
+	//fmt.Printf("start for \n")
 	for {
 		fmt.Printf("n= %v \n", n)
 		line, error := reader.Read()
 		if error == io.EOF { //|| (n > 5)
-			close(ScapeDataCh)
-			fmt.Printf("close(ScapeDataCh) \n")
+			//close(ScapeDataCh)
+			//fmt.Printf("close(ScapeDataCh) \n")
 			break
 		} else if error != nil {
 
@@ -65,12 +68,12 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 		}
 		if n == 0 {
 			n = 1
-			fmt.Printf("start parse csv header \n")
+			//fmt.Printf("start parse csv header \n")
 			//spl:=strings.Split(line[0], ";")
 			err := parseheader(line, &sH)
 			//fmt.Printf("line %v \n", line)
 
-			fmt.Printf("sH %v \n", sH)
+			//fmt.Printf("sH %v \n", sH)
 			if err != nil {
 
 				log.Fatal("parse header, ", err)
@@ -86,16 +89,16 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 		            },
 				})
 		*/
-		fmt.Printf("read line \n")
+		//fmt.Printf("read line \n")
 		ScapeData.Time, _ = getTime(line)
 		//fmt.Printf("Time= %v \n", ScapeData.Time)
 		len := len(line)
-		fmt.Printf("line len= %d , %v\n", len, line)
+		//fmt.Printf("line len= %d , %v\n", len, line)
 		for i := 2; i < 20; i++ {
 
 			if (sH[i] > 2) && (len > sH[i]) {
-				fmt.Printf("index %d", sH[i])
-				fmt.Printf("read float value= %v \n", line[sH[i]])
+				//fmt.Printf("index %d", sH[i])
+				//fmt.Printf("read float value= %v \n", line[sH[i]])
 				if f1, err := strconv.ParseFloat(line[sH[i]], 32); err == nil {
 					ScapeData.Values[i] = float32(f1)
 				}
@@ -115,12 +118,12 @@ type scapeHeader [20]int
 // parse csv header
 
 func parseheader(record []string, sH *scapeHeader) error {
-	fmt.Printf("parse header %v, len= %d\n", record, len(record))
+	//fmt.Printf("parse header %v, len= %d\n", record, len(record))
 	h := [20]string{"", "", "S101", "S115", "S300", "S1001", "S202", "S200", "S1300", "S1200", "S111", "S110", "", "", "", "", "", "", "", ""}
 	for i := 2; i < 20; i++ {
 		if h[i] != "" {
 			n := findColumn(h[i], record)
-			fmt.Printf("find column result i= %d,n= %v, \n", i, n)
+			//fmt.Printf("find column result i= %d,n= %v, \n", i, n)
 			sH[i] = n
 			//if sH[2] == 0 {
 			//	return errors.New("not found column")
