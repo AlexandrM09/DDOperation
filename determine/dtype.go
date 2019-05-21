@@ -8,6 +8,7 @@ import (
 )
 
 type (
+	//DrillDataType drill basic data struct
 	DrillDataType struct {
 		OperationList   []OperationOne
 		SteamCh         chan OperationOne
@@ -19,14 +20,13 @@ type (
 		LastScapeData   ScapeDataD
 		ScapeData       ScapeDataD
 		ActiveOperation int
-		Operationtype   OperationtypeD
+		//Operationtype   OperationtypeD
 		Log             *logrus.Logger
 		mu              *sync.RWMutex
 		cfg  			*ConfigDt
 	}
-
-	OperationtypeD [15]string
-	/*
+//OperationtypeD array drilling type operation	
+/*
 	   0 - Бурение
 	   1 - Наращивание
 	   2 - Промывка
@@ -38,6 +38,8 @@ type (
 	   8 - Бурение (слайд)
 	   9 - ПЗР
 	*/
+	OperationtypeD [15]string
+//ScapeDataD time series data
 	ScapeDataD struct {
 		Time   time.Time
 		Values [20]float32
@@ -55,6 +57,7 @@ type (
 		  11=Положение долота по свечам
 		*/
 	}
+	//OperationOne description of one operation
 	OperationOne struct {
 		startData, stopData, maxData, minData, sum, agv ScapeDataD
 		//buf_count,count int;
@@ -63,7 +66,7 @@ type (
 		Params   string
 	}
 )
-
+/*
 var DrillOperationConst = [15]string{"Бурение",
 	"Наращивание",
 	"Промывка",
@@ -72,6 +75,7 @@ var DrillOperationConst = [15]string{"Бурение",
 	"Спуск",
 	"Работа т/с",
 	"Бурение (ротор)", "Бурение (слайд)", "ПЗР", "", "", "", "", ""}
+*/
 
 //ScapeParamtype - scape parametrs json type
 type ScapeParamtype struct {

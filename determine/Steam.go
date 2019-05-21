@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 )
-
+//SteamRND test steam
 type SteamRND struct{}
 
 func (St *SteamRND) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
@@ -19,7 +19,7 @@ func (St *SteamRND) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	return
 }
 
-// Steam for csv example files
+//SteamCsv Steam for csv example files
 type SteamCsv struct {
 	FilePath string
 }

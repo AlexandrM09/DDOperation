@@ -16,18 +16,20 @@ import (
 	"github.com/sirupsen/logrus"
 )
 // num interface check
-var CheckInt = [10]int{0, 0, 1, 0, 0, 0, 0, 0, 0, 2}
+var checkInt = [10]int{0, 0, 1, 0, 0, 0, 0, 0, 0, 2}
 
 type (
 	listoperation []string
 	determineOne  interface {
-		Check(d *DrillDataType) int
+		Check(d *DrillDataType) (int,bool)
 		//Check(d *DrillDataType) (int,boll)//return num of operation, state of change operation
 		// CheckOne(d *DrillDataType) int
 	}
+	//SteamI basic interface for operations recognition
 	SteamI interface {
 		Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{})
 	}
+	//Determine basic data struct
 	Determine struct {
 		wg          *sync.WaitGroup
 		Data        *DrillDataType
@@ -37,7 +39,7 @@ type (
 		waitTime    int
 	}
 )
-
+//Wait waiting for completion 
 func (dt *Determine) Wait() error {
 	ch := make(chan struct{})
 	go func(ch chan struct{}) {
@@ -61,7 +63,7 @@ func (dt *Determine) Wait() error {
 		}
 	}
 }
-
+//Start - start loop
 func (dt *Determine) Start(wt int) error {
 	dt.waitTime = wt
 	dt.wg = &sync.WaitGroup{}
@@ -81,10 +83,11 @@ func (dt *Determine) Start(wt int) error {
 	return nil
 }
 
-// Main dispath function in list
+//Run main dispath function in list
 func (dt *Determine) Run() {
 
 	var res int
+	var changeOp bool
 	defer func() {
 		dt.wg.Done()
 		dt.Data.Log.WithFields(logrus.Fields{
@@ -117,7 +120,7 @@ func (dt *Determine) Run() {
 
 				if d.ActiveOperation >= 0 {
 					fmt.Println("Run ActiveCheck", fmt.Sprint(d.ActiveOperation))
-					res = dt.ListCheck[CheckInt[d.ActiveOperation]].Check(dt.Data)
+					res,changeOp = dt.ListCheck[checkInt[d.ActiveOperation]].Check(dt.Data)
 					fmt.Println("after Chek res= ", fmt.Sprint(res))
 				} else {
 					res = -1
@@ -127,7 +130,7 @@ func (dt *Determine) Run() {
 
 					for i := 0; i < len(dt.ListCheck) && (res == -1); i++ {
 						fmt.Println("Run Check", fmt.Sprint(i))
-						res = dt.ListCheck[i].Check(dt.Data)
+						res,changeOp = dt.ListCheck[i].Check(dt.Data)
 						fmt.Println("after Chek res= ", fmt.Sprint(res))
 					}
 				} // select operation
@@ -146,11 +149,13 @@ func (dt *Determine) Run() {
 						fmt.Println("startnewoperation()")
 						d.ActiveOperation = res
 						if d.ActiveOperation >= 0 {
+						if !changeOp {
 							//saveoperation
 							fmt.Println("saveoperation()")
-							dt.saveoperation()
+							dt.saveoperation()}
 
 						}
+						if changeOp {changeOp=false}
 						//startnewoperation
 						dt.startnewoperation()
 					}
@@ -165,7 +170,7 @@ func (dt *Determine) Run() {
 //	fmt.Println("Ooo")
 }
 
-// Create new List determine
+//NewDetermine  create new List determine
 func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 
 	return &Determine{Data: ds,
@@ -178,16 +183,23 @@ func (dt *Determine) addDatatooperation() {
 	//dt.Data.mu.Lock()
 	//defer dt.Data.mu.Unlock()
 }
+/*
+func (dt *Determine) changeOperation() {
+	dt.Data.mu.Lock()
+	defer dt.Data.mu.Unlock()
+
+}
+*/
 func (dt *Determine) startnewoperation() {
 
 	dt.Data.mu.Lock()
 	defer dt.Data.mu.Unlock()
 	dt.Data.OperationList = append(dt.Data.OperationList,
-		OperationOne{Operaton: dt.Data.Operationtype[dt.Data.ActiveOperation], startData: dt.Data.ScapeData})
+		OperationOne{Operaton: dt.Data.cfg.Operationtype[dt.Data.ActiveOperation], startData: dt.Data.ScapeData})
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
-	}).Info("Start operation " + dt.Data.Operationtype[dt.Data.ActiveOperation])
+	}).Info("Start operation " + dt.Data.cfg.Operationtype[dt.Data.ActiveOperation])
 }
 func (dt *Determine) saveoperation() {
 	//
@@ -201,17 +213,13 @@ func (dt *Determine) saveoperation() {
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
-	}).Info("Stop and save  operation " + dt.Data.Operationtype[dt.Data.ActiveOperation])
+	}).Info("Stop and save  operation " + dt.Data.cfg.Operationtype[dt.Data.ActiveOperation])
 }
+//Stop stoping loop
 func (dt *Determine) Stop() {
 	dt.Data.DoneCh <- struct{}{}
 }
 
-func GetList() listoperation {
-	return []string{"First operation"}
-}
-
-// Create Log
 //LoadConfig - load config file
 func LoadConfig(path string,cf *ConfigDt) error{
 	file, err := os.Open(path)

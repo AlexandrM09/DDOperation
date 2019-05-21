@@ -17,8 +17,11 @@ import (
    9 - ПЗР
 */
 type (
+	//Check0 - drill test condition
 	Check0 struct{}
+	//Check2 - circulation test condition
 	Check2 struct{}
+	//Check9 - temp operation test condition
 	Check9 struct{}
 )
 //  
@@ -28,43 +31,45 @@ func checkOne0(d *DrillDataType) int {
 	res=-1
 	n:=d.ScapeData.Values[2]-d.ScapeData.Values[3]
 	fmt.Printf("Drill n=%v \n",n)
-	fmt.Printf("CheckOne2(d)==%v \n",CheckOne2(d))
+	fmt.Printf("CheckOne2(d)==%v \n",checkOne2(d))
 	fmt.Printf("d.cfg.DephtTool=%v \n",d.cfg.DephtTool)
-    if (CheckOne2(d)==2)&&(n<d.cfg.DephtTool) { res=0}
+    if (checkOne2(d)==2)&&(n<d.cfg.DephtTool) { res=0}
 	return res
 	
 }
-func (o *Check0) Check(d *DrillDataType) int {
+//Check - drill test condition
+func (o *Check0) Check(d *DrillDataType) (int,bool) {
 	
-	return checkOne0(d)
+	return checkOne0(d),false
 	
 }
-//determination fluid flow
-func CheckOne2(d *DrillDataType) int {
+// local circulation test condition
+func checkOne2(d *DrillDataType) int {
 	var res int
 	res=-1
 	if detCirculation(d) { res=2}
 	return res
 	
 }
-func (o *Check2) Check(d *DrillDataType) int {
+//Check - circulation test condition
+func (o *Check2) Check(d *DrillDataType) (int,bool){
 	var res,resplus int
 	res=-1
-	res=CheckOne2(d)
+	res=checkOne2(d)
 	resplus=checkOne0(d)
-	if resplus>-1{return resplus}
-	return res
+	if resplus>-1{return resplus,false}
+	return res,false
 	
 }
 
-//ПЗР
-func (o *Check9) Check(d *DrillDataType) int {
+//Check - temp operation test condition
+func (o *Check9) Check(d *DrillDataType) (int,bool) {
 	
 	res:=checkOne0(d)
-	if res>-1 {return res}
-	res=CheckOne2(d)
-	if res>-1 {return res}
-	return 9
+	if res>-1 {return res,false}
+	res=checkOne2(d)
+	if res>-1 {return res,false}
+	return 9,false
 }
 // determination fluid flow
 func detCirculation(d *DrillDataType) bool{
