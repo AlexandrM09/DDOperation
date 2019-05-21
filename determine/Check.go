@@ -1,5 +1,9 @@
 package determine
 
+import (
+	"fmt"
+)
+
 /*
    0 - Бурение
    1 - Наращивание
@@ -23,7 +27,10 @@ func checkOne0(d *DrillDataType) int {
 	var res int
 	res=-1
 	n:=d.ScapeData.Values[2]-d.ScapeData.Values[3]
-    if (CheckOne2(d)==2)&&(n<0.05) { res=0}
+	fmt.Printf("Drill n=%v \n",n)
+	fmt.Printf("CheckOne2(d)==%v \n",CheckOne2(d))
+	fmt.Printf("d.cfg.DephtTool=%v \n",d.cfg.DephtTool)
+    if (CheckOne2(d)==2)&&(n<d.cfg.DephtTool) { res=0}
 	return res
 	
 }
@@ -36,7 +43,7 @@ func (o *Check0) Check(d *DrillDataType) int {
 func CheckOne2(d *DrillDataType) int {
 	var res int
 	res=-1
-	if d.ScapeData.Values[4]>10 { res=2}
+	if detCirculation(d) { res=2}
 	return res
 	
 }
@@ -59,3 +66,18 @@ func (o *Check9) Check(d *DrillDataType) int {
 	if res>-1 {return res}
 	return 9
 }
+// determination fluid flow
+func detCirculation(d *DrillDataType) bool{
+	if d.cfg.PresFlowCheck==0{
+		if d.ScapeData.Values[4]> d.cfg.Pmin { return true}
+	}
+	if d.ScapeData.Values[5]> d.cfg.Flowmin{ return true}
+	return false
+} 
+//determination rotation
+/*
+func detRotation(d *DrillDataType) bool{
+	if d.ScapeData.Values[9]> d.cfg.Rotationmin{return true}
+	return false
+}
+*/

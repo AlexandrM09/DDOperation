@@ -6,6 +6,8 @@ package determine
 */
 
 import (
+	"encoding/json"
+	"os"
 	"errors"
 	"fmt"
 	"sync"
@@ -13,13 +15,14 @@ import (
 
 	"github.com/sirupsen/logrus"
 )
-
+// num interface check
 var CheckInt = [10]int{0, 0, 1, 0, 0, 0, 0, 0, 0, 2}
 
 type (
 	listoperation []string
 	determineOne  interface {
 		Check(d *DrillDataType) int
+		//Check(d *DrillDataType) (int,boll)//return num of operation, state of change operation
 		// CheckOne(d *DrillDataType) int
 	}
 	SteamI interface {
@@ -51,8 +54,9 @@ func (dt *Determine) Wait() error {
 		case <-time.After(time.Duration(dt.waitTime) * time.Second):
 			{
 				//
+				dt.Data.DoneCh <- struct{}{}
 				return errors.New("time limit exceeded")
-				dt.Data.DoneCh<-struct{}{}
+				
 			}
 		}
 	}
@@ -91,7 +95,7 @@ func (dt *Determine) Run() {
 		close(dt.Data.SteamCh)
 		close(dt.Data.ErrCh)
 		dt.Data.DoneScapeCh <- struct{}{}
-		
+
 	}()
 
 	for {
@@ -158,7 +162,7 @@ func (dt *Determine) Run() {
 
 		}
 	}
-	fmt.Println("Ooo")
+//	fmt.Println("Ooo")
 }
 
 // Create new List determine
@@ -208,3 +212,16 @@ func GetList() listoperation {
 }
 
 // Create Log
+//LoadConfig - load config file
+func LoadConfig(path string,cf *ConfigDt) error{
+	file, err := os.Open(path)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+	decoder := json.NewDecoder(file)
+	//json.Unmarshal()
+	err = decoder.Decode(&cf)
+	//fmt.Printf("cfg=%v \n",cf)
+	return nil
+}

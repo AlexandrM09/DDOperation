@@ -156,11 +156,11 @@ func getTime(record []string) (time.Time, error) {
 	if err1 != nil {
 		return time.Now(), errors.New("bad format csv")
 	}
-	month_int, err2 := strconv.Atoi(parseDate[1])
+	monthint, err2 := strconv.Atoi(parseDate[1])
 	if err2 != nil {
 		return time.Now(), errors.New("bad format csv")
 	}
-	month := time.Month(month_int)
+	month := time.Month(monthint)
 	day, err3 := strconv.Atoi(parseDate[0])
 	if err3 != nil {
 		return time.Now(), errors.New("bad format csv")

@@ -21,7 +21,8 @@ type (
 		ActiveOperation int
 		Operationtype   OperationtypeD
 		Log             *logrus.Logger
-		mu *sync.RWMutex
+		mu              *sync.RWMutex
+		cfg  			*ConfigDt
 	}
 
 	OperationtypeD [15]string
@@ -71,3 +72,58 @@ var DrillOperationConst = [15]string{"Бурение",
 	"Спуск",
 	"Работа т/с",
 	"Бурение (ротор)", "Бурение (слайд)", "ПЗР", "", "", "", "", ""}
+
+//ScapeParamtype - scape parametrs json type
+type ScapeParamtype struct {
+	Name  string  `json:"name,string"`
+	Gid   int     `json:"gid"`
+	Delta float32 `json:"delta"`
+}
+
+//ConfigDt - configuration structure json type
+type ConfigDt struct {
+	Pmin                     float32 
+	Flowmin                  float32 
+	Rotationmin				 float32 
+	PresFlowCheck            int     
+	DephtTool                float32 
+	RotorSl                  int     
+	DirectionalCheck         int    
+	BeforeDrillString        string
+	ShowParamRotSl           int     
+	ShowParamCircl           int   
+	ShowParamWiper           int     
+	ChangeCircWiperfromDrill int     
+	Avgstand                 float32 
+	Wbitmax                  float32 
+	Pressmax                 float32 
+	TimeIntervalAll          int     
+	TimeIntervalMkTrip       int     
+	MinLenforTrip            int     
+	ScapeParam               []ScapeParamtype
+	Operationtype [15]string
+}
+
+/*
+type ConfigDt struct {
+	Pmin                     float32 `json:"Pmin"`
+	Flowmin                  float32 `json:"Flowmin"`
+	PresFlowCheck            int     `json:"PresFlowCheck"`
+	DephtTool                float32 `json:"DephtTool"`
+	RotorSl                  int     `json:"RotorSl"`
+	DirectionalCheck         int     `json:"DirectionalCheck"`
+	BeforeDrillString        string
+	ShowParamRotSl           int     `json:"ShowParamRotSl"`
+	ShowParamCircl           int     `json:"ShowParamCircl"`
+	ShowParamWiper           int     `json:"ShowParamWiper"`
+	ChangeCircWiperfromDrill int     `json:"ChangeCircWiperfromDrill"`
+	Avgstand                 float32 `json:"Avgstand"`
+	Wbitmax                  float32 `json:"Wbitmax"`
+	Pressmax                 float32 `json:"Pressmax"`
+	TimeIntervalAll          int     `json:"TimeIntervalAll"`
+	TimeIntervalMkTrip       int     `json:"TimeIntervalMkTrip"`
+	MinLenforTrip            int     `json:"MinLenforTrip"`
+	ScapeParam               []ScapeParamtype
+	Operationtype [15]string
+}
+*/

@@ -44,7 +44,7 @@ func TestSteamCsv(t *testing.T) {
 	var Scd ScapeDataD
 	ScapeDataCh := make(chan ScapeDataD)
 	DoneCh := make(chan struct{})
-	SteamCsv := &SteamCsv{FilePath:"../source/source.zip"}
+	SteamCsv := &SteamCsv{FilePath: "../source/source.zip"}
 	go SteamCsv.Read(ScapeDataCh, DoneCh)
 	fmt.Printf("start")
 	//data := []byte("Hello Bold!")
@@ -83,6 +83,12 @@ func TestElementaryDtm(t *testing.T) {
 
 	}
 	defer file.Close()
+	fmt.Println("Start test")
+	cfg := ConfigDt{}
+	errf = LoadConfig("../config.json", &cfg)
+	if errf != nil {
+		t.Fatal("not load config file")
+	}
 	sr := DrillDataType{OperationList: make([]OperationOne, 0),
 		SteamCh:         make(chan OperationOne),
 		ScapeDataCh:     make(chan ScapeDataD),
@@ -92,17 +98,18 @@ func TestElementaryDtm(t *testing.T) {
 		ActiveOperation: -1,
 		Operationtype:   DrillOperationConst,
 		Log:             CLog(),
+		cfg:             &cfg,		
 		//mu:&sync.RWMutex{},
 	}
 
-	tm := NewDetermine(&sr, &SteamCsv{FilePath:"../source/source.zip"})
+	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source.zip"})
 	_ = tm.Start(30)
 	err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
 	for i := 0; i < len(tm.Data.OperationList); i++ {
-		fmt.Fprintf(file,"%s | %s |%s \r\n", tm.Data.OperationList[i].startData.Time.Format("2006-01-02 15:04:05"),
+		fmt.Fprintf(file, "%s | %s |%s \r\n", tm.Data.OperationList[i].startData.Time.Format("2006-01-02 15:04:05"),
 			tm.Data.OperationList[i].stopData.Time.Format("15:04:05"),
 			tm.Data.OperationList[i].Operaton)
 	}
@@ -111,6 +118,12 @@ func TestElementaryDtm(t *testing.T) {
 //very simple determine test
 func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start test")
+	cfg := ConfigDt{}
+	errf := LoadConfig("../config.json", &cfg)
+	if errf != nil {
+		t.Fatal("not load config file")
+	}
+	
 	sr := DrillDataType{OperationList: make([]OperationOne, 0),
 		SteamCh:         make(chan OperationOne),
 		ScapeDataCh:     make(chan ScapeDataD),
@@ -120,11 +133,12 @@ func TestSimpleDtm(t *testing.T) {
 		ActiveOperation: -1,
 		Operationtype:   DrillOperationConst,
 		Log:             CLog(),
+		cfg:             &cfg,
 		//mu:&sync.RWMutex{},
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
-	_ = tm.Start(15)
+	_ = tm.Start(25)
 	err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
