@@ -1,4 +1,12 @@
 ﻿---
+# поднимать,подъем из скважины - pull out of hole (POOH) 
+#спускать в скважину, спуск - run in hole (RIH),lowering 
+#спуско-подъемные операции - round trips, runs (in hole)
+#наращивание - Making a connection
+#СПО - Making a trip
+#проработка - wiper trip
+#инструмент - tool(s),(буровой) drill string 
+#промывка - circulation
 Pmin: 10
 Flowmin: 15
 PresFlowCheck: 0

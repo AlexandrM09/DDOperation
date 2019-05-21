@@ -10,23 +10,24 @@ import (
 type (
 	//DrillDataType drill basic data struct
 	DrillDataType struct {
-		OperationList   []OperationOne
-		SteamCh         chan OperationOne
-		ScapeDataCh     chan ScapeDataD
-		ErrCh           chan error
-		DoneCh          chan struct{}
-		DoneScapeCh     chan struct{}
-		ScapeFullData   bool
-		LastScapeData   ScapeDataD
-		ScapeData       ScapeDataD
-		ActiveOperation int
+		OperationList        []OperationOne
+		SteamCh              chan OperationOne
+		ScapeDataCh          chan ScapeDataD
+		ErrCh                chan error
+		DoneCh               chan struct{}
+		DoneScapeCh          chan struct{}
+		ScapeFullData        bool
+		LastScapeData        ScapeDataD
+		ScapeData            ScapeDataD
+		ActiveOperation      int
+		StartActiveOperation time.Time
 		//Operationtype   OperationtypeD
-		Log             *logrus.Logger
-		mu              *sync.RWMutex
-		cfg  			*ConfigDt
+		Log *logrus.Logger
+		mu  *sync.RWMutex
+		cfg *ConfigDt
 	}
-//OperationtypeD array drilling type operation	
-/*
+	//OperationtypeD array drilling type operation
+	/*
 	   0 - Бурение
 	   1 - Наращивание
 	   2 - Промывка
@@ -39,7 +40,7 @@ type (
 	   9 - ПЗР
 	*/
 	OperationtypeD [15]string
-//ScapeDataD time series data
+	//ScapeDataD time series data
 	ScapeDataD struct {
 		Time   time.Time
 		Values [20]float32
@@ -66,6 +67,7 @@ type (
 		Params   string
 	}
 )
+
 /*
 var DrillOperationConst = [15]string{"Бурение",
 	"Наращивание",
@@ -86,26 +88,27 @@ type ScapeParamtype struct {
 
 //ConfigDt - configuration structure json type
 type ConfigDt struct {
-	Pmin                     float32 
-	Flowmin                  float32 
-	Rotationmin				 float32 
-	PresFlowCheck            int     
-	DephtTool                float32 
-	RotorSl                  int     
-	DirectionalCheck         int    
+	Pmin                     float32
+	Flowmin                  float32
+	Rotationmin              float32
+	PresFlowCheck            int
+	DephtTool                float32
+	RotorSl                  int
+	DirectionalCheck         int
 	BeforeDrillString        string
-	ShowParamRotSl           int     
-	ShowParamCircl           int   
-	ShowParamWiper           int     
-	ChangeCircWiperfromDrill int     
-	Avgstand                 float32 
-	Wbitmax                  float32 
-	Pressmax                 float32 
-	TimeIntervalAll          int     
-	TimeIntervalMkTrip       int     
-	MinLenforTrip            int     
+	ShowParamRotSl           int
+	ShowParamCircl           int
+	ShowParamWiper           int
+	ChangeCircWiperfromDrill int
+	Avgstand                 float32
+	Wbitmax                  float32
+	Pressmax                 float32
+	TimeIntervalAll          int
+	TimeIntervalMkTrip       int
+	TimeIntervalMaxMkconn    int
+	MinLenforTrip            int
 	ScapeParam               []ScapeParamtype
-	Operationtype [15]string
+	Operationtype            [15]string
 }
 
 /*

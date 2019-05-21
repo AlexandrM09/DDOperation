@@ -83,7 +83,7 @@ func TestElementaryDtm(t *testing.T) {
 
 	}
 	defer file.Close()
-	fmt.Println("Start test")
+	fmt.Println("Load config")
 	cfg := ConfigDt{}
 	errf = LoadConfig("../config.json", &cfg)
 	if errf != nil {
@@ -96,9 +96,9 @@ func TestElementaryDtm(t *testing.T) {
 		DoneCh:          make(chan struct{}),
 		DoneScapeCh:     make(chan struct{}),
 		ActiveOperation: -1,
-	//	Operationtype:   DrillOperationConst,
-		Log:             CLog(),
-		cfg:             &cfg,		
+		//	Operationtype:   DrillOperationConst,
+		Log: CLog(),
+		cfg: &cfg,
 		//mu:&sync.RWMutex{},
 	}
 
@@ -123,7 +123,7 @@ func TestSimpleDtm(t *testing.T) {
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
-	
+
 	sr := DrillDataType{OperationList: make([]OperationOne, 0),
 		SteamCh:         make(chan OperationOne),
 		ScapeDataCh:     make(chan ScapeDataD),
@@ -131,9 +131,9 @@ func TestSimpleDtm(t *testing.T) {
 		DoneCh:          make(chan struct{}),
 		DoneScapeCh:     make(chan struct{}),
 		ActiveOperation: -1,
-	//	Operationtype:   DrillOperationConst,
-		Log:             CLog(),
-		cfg:             &cfg,
+		//	Operationtype:   DrillOperationConst,
+		Log: CLog(),
+		cfg: &cfg,
 		//mu:&sync.RWMutex{},
 	}
 
@@ -155,7 +155,7 @@ func TestSimpleDtm(t *testing.T) {
 	if !(len(tm.Data.OperationList) == 3) {
 		t.Errorf("the number of operations does not match")
 	}
-	neadres := [3]string{"ПЗР", "Промывка", "Бурение"}
+	neadres := [3]string{"Наращивание", "Промывка", "Бурение"}
 	var dd OperationOne
 	var n int64
 

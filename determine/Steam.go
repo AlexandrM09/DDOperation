@@ -56,7 +56,7 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	n := 0
 	//fmt.Printf("start for \n")
 	for {
-		fmt.Printf("n= %v \n", n)
+		if (n==0)||(n%1000==0){fmt.Printf("record number= %v \n", n)}
 		line, error := reader.Read()
 		if error == io.EOF { //|| (n > 5)
 			//close(ScapeDataCh)
