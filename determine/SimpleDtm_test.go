@@ -155,7 +155,7 @@ func TestSimpleDtm(t *testing.T) {
 	if !(len(tm.Data.OperationList) == 3) {
 		t.Errorf("the number of operations does not match")
 	}
-	neadres := [3]string{"Наращивание", "Промывка", "Бурение"}
+	neadres := [3]string{"Наращивание", "Промывка", "Бурение (слайд)"}
 	var dd OperationOne
 	var n int64
 

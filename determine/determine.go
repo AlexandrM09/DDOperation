@@ -7,20 +7,19 @@ package determine
 
 import (
 	"encoding/json"
-	"os"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
-
 type (
 	listoperation []string
 	determineOne  interface {
-		Check(d *DrillDataType) (int,bool)
+		Check(d *DrillDataType) (int, bool)
 		//Check(d *DrillDataType) (int,boll)//return num of operation, state of change operation
 		// CheckOne(d *DrillDataType) int
 	}
@@ -38,13 +37,14 @@ type (
 		waitTime    int
 	}
 )
-//Wait waiting for completion 
+
+//Wait waiting for completion
 func (dt *Determine) Wait() error {
 	ch := make(chan struct{})
 	go func(ch chan struct{}) {
-	//	fmt.Println("!!!!!!before wg.Wait()")
+		//	fmt.Println("!!!!!!before wg.Wait()")
 		dt.wg.Wait()
-	//	fmt.Println("!!!!!!ch <- struct{}{}")
+		//	fmt.Println("!!!!!!ch <- struct{}{}")
 		ch <- struct{}{}
 		fmt.Println("!!!!!!after wg.Wait()")
 	}(ch)
@@ -57,11 +57,12 @@ func (dt *Determine) Wait() error {
 				//
 				dt.Data.DoneCh <- struct{}{}
 				return errors.New("time limit exceeded")
-				
+
 			}
 		}
 	}
 }
+
 //Start - start loop
 func (dt *Determine) Start(wt int) error {
 	dt.waitTime = wt
@@ -87,7 +88,7 @@ func (dt *Determine) Run() {
 
 	var res int
 	var changeOp bool
-	dt.Data.ActiveOperation=-1
+	dt.Data.ActiveOperation = -1
 	defer func() {
 		dt.wg.Done()
 		dt.Data.Log.WithFields(logrus.Fields{
@@ -116,12 +117,12 @@ func (dt *Determine) Run() {
 
 		case d.ScapeData = <-d.ScapeDataCh:
 			{
-			//	fmt.Println("after read Scapedata")
+				//	fmt.Println("after read Scapedata")
 
 				if d.ActiveOperation >= 0 {
-			//		fmt.Println("Run ActiveCheck", fmt.Sprint(d.ActiveOperation))
-					res,changeOp = dt.ListCheck[checkInt[d.ActiveOperation]].Check(dt.Data)
-			//		fmt.Println("after Chek res= ", fmt.Sprint(res))
+					//		fmt.Println("Run ActiveCheck", fmt.Sprint(d.ActiveOperation))
+					res, changeOp = dt.ListCheck[checkInt[d.ActiveOperation]].Check(dt.Data)
+					//		fmt.Println("after Chek res= ", fmt.Sprint(res))
 				} else {
 					res = -1
 				}
@@ -129,17 +130,17 @@ func (dt *Determine) Run() {
 				if res == -1 {
 
 					for i := 0; i < len(dt.ListCheck) && (res == -1); i++ {
-			//			fmt.Println("Run Check", fmt.Sprint(i))
-						res,changeOp = dt.ListCheck[i].Check(dt.Data)
-			//			fmt.Println("after Chek res= ", fmt.Sprint(res))
+						//			fmt.Println("Run Check", fmt.Sprint(i))
+						res, changeOp = dt.ListCheck[i].Check(dt.Data)
+						//			fmt.Println("after Chek res= ", fmt.Sprint(res))
 					}
 				} // select operation
 				if res == -1 {
 					res = len(dt.ListCheck) - 1
-					changeOp =false
+					changeOp = false
 				}
-			//	fmt.Println("res= ", fmt.Sprint(res))
-			//	fmt.Println("ActiveOperation ", fmt.Sprint(d.ActiveOperation))
+				//	fmt.Println("res= ", fmt.Sprint(res))
+				//	fmt.Println("ActiveOperation ", fmt.Sprint(d.ActiveOperation))
 				switch {
 				case res == d.ActiveOperation:
 					{ //addDatatooperation
@@ -147,19 +148,22 @@ func (dt *Determine) Run() {
 					}
 				default:
 					{
-				//		fmt.Println("startnewoperation()")
+						//		fmt.Println("startnewoperation()")
 						d.ActiveOperation = res
 						//if d.ActiveOperation >= 0 {
 						if !changeOp {
 							//saveoperation
-					//		fmt.Println("saveoperation()")
+							//		fmt.Println("saveoperation()")
 							dt.saveoperation()
-							dt.startnewoperation()}
+							dt.startnewoperation()
+						}
 
 						//}
-						if changeOp {changeOp=false}
+						if changeOp {
+							changeOp = false
+						}
 						//startnewoperation
-						
+
 					}
 				}
 
@@ -169,13 +173,14 @@ func (dt *Determine) Run() {
 
 		}
 	}
-//	fmt.Println("Ooo")
+	//	fmt.Println("Ooo")
 }
 
 func (dt *Determine) addDatatooperation() {
 	//dt.Data.mu.Lock()
 	//defer dt.Data.mu.Unlock()
 }
+
 /*
 func (dt *Determine) changeOperation() {
 	dt.Data.mu.Lock()
@@ -187,9 +192,15 @@ func (dt *Determine) startnewoperation() {
 
 	dt.Data.mu.Lock()
 	defer dt.Data.mu.Unlock()
+	tempData := dt.Data.ScapeData
+	if dt.Data.temp.FlagChangeTrip == 1 {
+		dt.Data.temp.FlagChangeTrip = 0
+		tempData = dt.Data.temp.LastTripData
+	}
 	dt.Data.OperationList = append(dt.Data.OperationList,
-		OperationOne{Operaton: dt.Data.cfg.Operationtype[dt.Data.ActiveOperation], startData: dt.Data.ScapeData})
-	dt.Data.StartActiveOperation=dt.Data.ScapeData.Time	
+		OperationOne{Operaton: dt.Data.cfg.Operationtype[dt.Data.ActiveOperation], startData: tempData})
+	dt.Data.temp.LastStartData = tempData
+	dt.Data.StartActiveOperation = tempData.Time
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
@@ -203,19 +214,25 @@ func (dt *Determine) saveoperation() {
 	if len == 0 {
 		return
 	}
-	dt.Data.OperationList[len-1].stopData = dt.Data.LastScapeData
+	if dt.Data.temp.FlagChangeTrip == 1 {
+		//dt.Data.temp.FlagChangeTrip=0
+		dt.Data.OperationList[len-1].stopData = dt.Data.temp.LastTripData
+	} else {
+		dt.Data.OperationList[len-1].stopData = dt.Data.LastScapeData
+	}
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Stop and save  operation " + dt.Data.cfg.Operationtype[dt.Data.ActiveOperation])
 }
+
 //Stop stoping loop
 func (dt *Determine) Stop() {
 	dt.Data.DoneCh <- struct{}{}
 }
 
 //LoadConfig - load config file
-func LoadConfig(path string,cf *ConfigDt) error{
+func LoadConfig(path string, cf *ConfigDt) error {
 	file, err := os.Open(path)
 	defer file.Close()
 	if err != nil {
@@ -230,11 +247,12 @@ func LoadConfig(path string,cf *ConfigDt) error{
 
 // num interface check
 var checkInt = [10]int{0, 1, 2, 0, 0, 0, 0, 0, 0, 3}
+
 //NewDetermine  create new List determine
 func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 
 	return &Determine{Data: ds,
 		Steam:     sm,
-		ListCheck: []determineOne{&Check0{},&Check1{}, &Check2{}, &Check9{}},
+		ListCheck: []determineOne{&Check0{}, &Check1{}, &Check2{}, &Check9{}},
 	}
 }

@@ -10,16 +10,24 @@ import (
 type (
 	//DrillDataType drill basic data struct
 	DrillDataType struct {
-		OperationList        []OperationOne
-		SteamCh              chan OperationOne
-		ScapeDataCh          chan ScapeDataD
-		ErrCh                chan error
-		DoneCh               chan struct{}
-		DoneScapeCh          chan struct{}
-		ScapeFullData        bool
-		LastScapeData        ScapeDataD
-		ScapeData            ScapeDataD
-		ActiveOperation      int
+		OperationList   []OperationOne
+		SteamCh         chan OperationOne
+		ScapeDataCh     chan ScapeDataD
+		ErrCh           chan error
+		DoneCh          chan struct{}
+		DoneScapeCh     chan struct{}
+		ScapeFullData   bool
+		LastScapeData   ScapeDataD
+		ScapeData       ScapeDataD
+		ActiveOperation int
+		temp            struct {
+			LastToolDepht     float32
+			LastTimeToolDepht time.Time
+			StartDepht        float32
+			LastStartData     ScapeDataD
+			LastTripData      ScapeDataD
+			FlagChangeTrip    int
+		}
 		StartActiveOperation time.Time
 		//Operationtype   OperationtypeD
 		Log *logrus.Logger

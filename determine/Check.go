@@ -1,8 +1,9 @@
 package determine
 
 import (
-//	_ "fmt"
-	_ "time"
+	//	_ "fmt"
+	"math"
+	"time"
 )
 
 /*
@@ -26,13 +27,14 @@ type (
 	Check2 struct{}
 	//Check3 - wiper trip (reapeat Check2)
 	Check3 struct{}
+	//Check4 -  making a trip (Up)
+	Check4 struct{}
 	//Check7 - drill rotor
 	Check7 struct{}
 	//Check8 - drill slide test condition
 	Check8 struct{}
 	//Check9 - temp operation test condition
 	Check9 struct{}
-
 )
 
 //
@@ -45,8 +47,10 @@ func checkOne0(d *DrillDataType) int {
 	//	fmt.Printf("CheckOne2(d)==%v \n",checkOne2(d))
 	//	fmt.Printf("d.cfg.DephtTool=%v \n",d.cfg.DephtTool)
 	if (checkOne2(d) == 2) && (n < d.cfg.DephtTool) {
-		if d.cfg.RotorSl>0{
-			if ( detRotation(d)) {return 7}
+		if d.cfg.RotorSl > 0 {
+			if detRotation(d) {
+				return 7
+			}
 			return 8
 		}
 		res = 0
@@ -62,6 +66,17 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 	if res == 9 {
 		duratOp := int(d.ScapeData.Time.Sub(d.StartActiveOperation).Seconds())
 		//nead check 4,5
+		if (d.ActiveOperation == 2) || (d.ActiveOperation == 9) {
+			res, _, _ := getMoveTrip(d)
+			if math.Abs(float64(res)) > float64(d.cfg.MinLenforTrip) {
+				d.temp.LastTripData=d.ScapeData
+				
+				if res > 0 {
+					return 5, true
+				} //down
+				return 4, true //up
+			}
+		}
 		//	fmt.Printf("duratOp=%v, start %v \n",duratOp,d.StartActiveOperation)
 		if (duratOp < d.cfg.TimeIntervalMaxMkconn) || (d.ActiveOperation == -1) {
 			return 1, false
@@ -102,10 +117,13 @@ func (o *Check2) Check(d *DrillDataType) (int, bool) {
 	if resplus > -1 {
 		return resplus, false
 	}
-	if ( detRotation(d)) {return 3, false}
+	if detRotation(d) {
+		return 3, false
+	}
 	return res, false
 
 }
+
 //Check - wiper trip (reapeat Check2)
 func (o *Check3) Check(d *DrillDataType) (int, bool) {
 	var res, resplus int
@@ -115,18 +133,46 @@ func (o *Check3) Check(d *DrillDataType) (int, bool) {
 	if resplus > -1 {
 		return resplus, false
 	}
-	if ( detRotation(d)) {return 3, false}
+	if detRotation(d) {
+		return 3, false
+	}
 	return res, false
 }
+//Check -  making a trip (Up)
+func (o *Check4) Check(d *DrillDataType) (int, bool) {
+	if detCirculation(d){return -1,false}// is not making a trip 
+	deltaDepht:=d.temp.LastTripData.Values[3]-d.ScapeData.Values[3]
+	if math.Abs(float64(deltaDepht))<0.005{
+		duratOp := int(d.ScapeData.Time.Sub(d.temp.LastTripData.Time).Seconds())
+		if duratOp>d.cfg.TimeIntervalMkTrip{
+			//you need to pass LastTripData
+			d.temp.FlagChangeTrip=1
+			return 9,false}
+		return 4,false
+	}
+	if (deltaDepht>0){
+		//That is all right
+		d.temp.LastTripData=d.ScapeData
+		return 4,false
+	}
+	if (-deltaDepht)>float32(d.cfg.MinLenforTrip){
+		///you need to pass LastTripData
+		d.temp.FlagChangeTrip=1
+		return 5,false
+	}
 
+	return -1, false
+}
 //Check - drill rotor test condition
 func (o *Check7) Check(d *DrillDataType) (int, bool) {
 	return checkOne0(d), false
 }
+
 //Check - drill slide test condition
 func (o *Check8) Check(d *DrillDataType) (int, bool) {
 	return checkOne0(d), false
 }
+
 //Check - temp operation test condition
 func (o *Check9) Check(d *DrillDataType) (int, bool) {
 	//if checkOne9(d)>-1 {return 9,false}
@@ -160,7 +206,15 @@ func detCirculation(d *DrillDataType) bool {
 
 //determination rotation
 
-func detRotation(d *DrillDataType) bool{
-	if d.ScapeData.Values[9]> d.cfg.Rotationmin{return true}
+func detRotation(d *DrillDataType) bool {
+	if d.ScapeData.Values[9] > d.cfg.Rotationmin {
+		return true
+	}
 	return false
+}
+
+// tracks the movement of the tool
+func getMoveTrip(d *DrillDataType) (float32, float32, time.Time) {
+	res := (d.ScapeData.Values[3] - d.temp.LastStartData.Values[3])
+	return res, 0, time.Now()
 }
