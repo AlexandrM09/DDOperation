@@ -29,6 +29,8 @@ type (
 	Check3 struct{}
 	//Check4 -  making a trip (Up)
 	Check4 struct{}
+	//Check5 -  making a trip (Down)
+	Check5 struct{}
 	//Check7 - drill rotor
 	Check7 struct{}
 	//Check8 - drill slide test condition
@@ -69,8 +71,8 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 		if (d.ActiveOperation == 2) || (d.ActiveOperation == 9) {
 			res, _, _ := getMoveTrip(d)
 			if math.Abs(float64(res)) > float64(d.cfg.MinLenforTrip) {
-				d.temp.LastTripData=d.ScapeData
-				
+				d.temp.LastTripData = d.ScapeData
+
 				if res > 0 {
 					return 5, true
 				} //down
@@ -138,31 +140,65 @@ func (o *Check3) Check(d *DrillDataType) (int, bool) {
 	}
 	return res, false
 }
+
 //Check -  making a trip (Up)
 func (o *Check4) Check(d *DrillDataType) (int, bool) {
-	if detCirculation(d){return -1,false}// is not making a trip 
-	deltaDepht:=d.temp.LastTripData.Values[3]-d.ScapeData.Values[3]
-	if math.Abs(float64(deltaDepht))<0.005{
+	if detCirculation(d) {
+		return -1, false// is not making a trip
+	} 
+	deltaDepht := d.temp.LastTripData.Values[3] - d.ScapeData.Values[3]
+	if deltaDepht < 0.005 {
 		duratOp := int(d.ScapeData.Time.Sub(d.temp.LastTripData.Time).Seconds())
-		if duratOp>d.cfg.TimeIntervalMkTrip{
+		if duratOp > d.cfg.TimeIntervalMkTrip {
 			//you need to pass LastTripData
-			d.temp.FlagChangeTrip=1
-			return 9,false}
-		return 4,false
+			d.temp.FlagChangeTrip = 1
+			return 9, false
+		}
+		if (-deltaDepht) > float32(d.cfg.MinLenforTrip) {
+			///you need to pass LastTripData
+			d.temp.FlagChangeTrip = 1
+			return 5, false
+		}
+		return 4, false
 	}
-	if (deltaDepht>0){
+	if deltaDepht > 0 {
 		//That is all right
-		d.temp.LastTripData=d.ScapeData
-		return 4,false
-	}
-	if (-deltaDepht)>float32(d.cfg.MinLenforTrip){
-		///you need to pass LastTripData
-		d.temp.FlagChangeTrip=1
-		return 5,false
+		d.temp.LastTripData = d.ScapeData
+		return 4, false
 	}
 
 	return -1, false
 }
+
+//Check -  making a trip (Down)
+func (o *Check5) Check(d *DrillDataType) (int, bool) {
+	if detCirculation(d) {
+		return -1, false
+	} // is not making a trip
+	deltaDepht := d.ScapeData.Values[3] - d.temp.LastTripData.Values[3]
+	if deltaDepht < 0.005 {
+		duratOp := int(d.ScapeData.Time.Sub(d.temp.LastTripData.Time).Seconds())
+		if duratOp > d.cfg.TimeIntervalMkTrip {
+			//you need to pass LastTripData
+			d.temp.FlagChangeTrip = 1
+			return 9, false
+		}
+		if (-deltaDepht) > float32(d.cfg.MinLenforTrip) {
+			///you need to pass LastTripData
+			d.temp.FlagChangeTrip = 1
+			return 4, false
+		}
+		return 5, false
+	}
+	if deltaDepht > 0 {
+		//That is all right
+		d.temp.LastTripData = d.ScapeData
+		return 5, false
+	}
+
+	return -1, false
+}
+
 //Check - drill rotor test condition
 func (o *Check7) Check(d *DrillDataType) (int, bool) {
 	return checkOne0(d), false
