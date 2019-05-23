@@ -1,7 +1,7 @@
 package determine
 
 import (
-	_ "fmt"
+//	_ "fmt"
 	_ "time"
 )
 
@@ -24,8 +24,15 @@ type (
 	Check1 struct{}
 	//Check2 - circulation test condition
 	Check2 struct{}
+	//Check3 - wiper trip (reapeat Check2)
+	Check3 struct{}
+	//Check7 - drill rotor
+	Check7 struct{}
+	//Check8 - drill slide test condition
+	Check8 struct{}
 	//Check9 - temp operation test condition
 	Check9 struct{}
+
 )
 
 //
@@ -38,6 +45,10 @@ func checkOne0(d *DrillDataType) int {
 	//	fmt.Printf("CheckOne2(d)==%v \n",checkOne2(d))
 	//	fmt.Printf("d.cfg.DephtTool=%v \n",d.cfg.DephtTool)
 	if (checkOne2(d) == 2) && (n < d.cfg.DephtTool) {
+		if d.cfg.RotorSl>0{
+			if ( detRotation(d)) {return 7}
+			return 8
+		}
 		res = 0
 	}
 	return res
@@ -50,6 +61,7 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 	//fmt.Printf("Check1 res1=%v \n",res)
 	if res == 9 {
 		duratOp := int(d.ScapeData.Time.Sub(d.StartActiveOperation).Seconds())
+		//nead check 4,5
 		//	fmt.Printf("duratOp=%v, start %v \n",duratOp,d.StartActiveOperation)
 		if (duratOp < d.cfg.TimeIntervalMaxMkconn) || (d.ActiveOperation == -1) {
 			return 1, false
@@ -90,10 +102,31 @@ func (o *Check2) Check(d *DrillDataType) (int, bool) {
 	if resplus > -1 {
 		return resplus, false
 	}
+	if ( detRotation(d)) {return 3, false}
 	return res, false
 
 }
+//Check - wiper trip (reapeat Check2)
+func (o *Check3) Check(d *DrillDataType) (int, bool) {
+	var res, resplus int
+	res = -1
+	res = checkOne2(d)
+	resplus = checkOne0(d)
+	if resplus > -1 {
+		return resplus, false
+	}
+	if ( detRotation(d)) {return 3, false}
+	return res, false
+}
 
+//Check - drill rotor test condition
+func (o *Check7) Check(d *DrillDataType) (int, bool) {
+	return checkOne0(d), false
+}
+//Check - drill slide test condition
+func (o *Check8) Check(d *DrillDataType) (int, bool) {
+	return checkOne0(d), false
+}
 //Check - temp operation test condition
 func (o *Check9) Check(d *DrillDataType) (int, bool) {
 	//if checkOne9(d)>-1 {return 9,false}
@@ -126,9 +159,8 @@ func detCirculation(d *DrillDataType) bool {
 }
 
 //determination rotation
-/*
+
 func detRotation(d *DrillDataType) bool{
 	if d.ScapeData.Values[9]> d.cfg.Rotationmin{return true}
 	return false
 }
-*/
