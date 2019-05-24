@@ -80,7 +80,27 @@ func (dt *Determine) Start(wt int) error {
 		//"Time" : time.Now().Format("dd.mm.yy hh:mm"),
 	}).Info("Start Steam")
 	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh)
+	go dt.Summarysheet()
 	return nil
+}
+
+//Summarysheet - fills in the summary sheet
+func (dt *Determine) Summarysheet() {
+	var resStr OperationOne
+	for {
+		select {
+		case <-dt.Data.DoneSummary:
+			{
+				dt.saveSummaryStr(&resStr)
+				return
+			}
+		case resStr = <-dt.Data.steamCh:
+			{
+				dt.addSummaryStr(&resStr)
+			}
+		}
+
+	}
 }
 
 //Run main dispath function in list
@@ -96,9 +116,9 @@ func (dt *Determine) Run() {
 		}).Info("Done")
 		fmt.Println("Close ScapeDataCh")
 		close(dt.Data.ScapeDataCh)
-		close(dt.Data.SteamCh)
+		close(dt.Data.steamCh)
 		close(dt.Data.ErrCh)
-		dt.Data.DoneScapeCh <- struct{}{}
+		dt.Data.DoneSummary <- struct{}{}
 
 	}()
 
@@ -197,10 +217,11 @@ func (dt *Determine) startnewoperation() {
 		dt.Data.temp.FlagChangeTrip = 0
 		tempData = dt.Data.temp.LastTripData
 	}
-	dt.Data.OperationList = append(dt.Data.OperationList,
-		OperationOne{Operaton: dt.Data.cfg.Operationtype[dt.Data.ActiveOperation], startData: tempData})
+	dt.Data.operationList = append(dt.Data.operationList,
+		OperationOne{Operaton: dt.Data.cfg.Operationtype[dt.Data.ActiveOperation], startData: tempData, status: "start"})
 	dt.Data.temp.LastStartData = tempData
-	dt.Data.StartActiveOperation = tempData.Time
+	dt.Data.startActiveOperation = tempData.Time
+	dt.Data.steamCh <- dt.Data.operationList[len(dt.Data.operationList)-1]
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
@@ -210,20 +231,41 @@ func (dt *Determine) saveoperation() {
 	//
 	dt.Data.mu.Lock()
 	defer dt.Data.mu.Unlock()
-	len := len(dt.Data.OperationList)
+	len := len(dt.Data.operationList)
 	if len == 0 {
 		return
 	}
 	if dt.Data.temp.FlagChangeTrip == 1 {
 		//dt.Data.temp.FlagChangeTrip=0
-		dt.Data.OperationList[len-1].stopData = dt.Data.temp.LastTripData
+		dt.Data.operationList[len-1].stopData = dt.Data.temp.LastTripData
 	} else {
-		dt.Data.OperationList[len-1].stopData = dt.Data.LastScapeData
+		dt.Data.operationList[len-1].stopData = dt.Data.LastScapeData
 	}
+	dt.Data.operationList[len-1].status = "save"
+	dt.Data.steamCh <- dt.Data.operationList[len-1]
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Stop and save  operation " + dt.Data.cfg.Operationtype[dt.Data.ActiveOperation])
+}
+func (dt *Determine) addSummaryStr(p *OperationOne) {
+	if p.status == "save" {
+		dt.Data.summarysheet = append(dt.Data.summarysheet, *p)
+	}
+	return
+}
+func (dt *Determine) saveSummaryStr(p *OperationOne) {
+	return
+}
+
+//GetSummarysheet - return summary sheet
+func (dt *Determine) GetSummarysheet() []OperationOne {
+	return dt.Data.summarysheet
+}
+
+//GetOperationList - return operation list
+func (dt *Determine) GetOperationList() []OperationOne {
+	return dt.Data.operationList
 }
 
 //Stop stoping loop
@@ -246,13 +288,21 @@ func LoadConfig(path string, cf *ConfigDt) error {
 }
 
 // num interface check
-var checkInt = [10]int{0, 1, 2, 0, 0, 0, 0, 0, 0, 3}
+var checkInt = [10]int{0, 1, 2, 3, 4, 5, 0, 6, 7, 8}
 
 //NewDetermine  create new List determine
 func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
-
+	ds.operationList = make([]OperationOne, 0, 500)
+	ds.summarysheet = make([]OperationOne, 0, 200)
+	ds.steamCh = make(chan OperationOne)
+	ds.ScapeDataCh = make(chan ScapeDataD)
+	ds.ErrCh = make(chan error, 2)
+	ds.DoneCh = make(chan struct{})
+	ds.DoneSummary = make(chan struct{})
+	ds.ActiveOperation = 1
 	return &Determine{Data: ds,
-		Steam:     sm,
-		ListCheck: []determineOne{&Check0{}, &Check1{}, &Check2{}, &Check9{}},
+		Steam: sm,
+		ListCheck: []determineOne{&Check0{}, &Check1{},
+			&Check2{}, &Check3{}, &Check4{}, &Check5{}, &Check7{}, &Check8{}, &Check9{}},
 	}
 }

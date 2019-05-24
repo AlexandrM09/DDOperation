@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Start program", dtm.GetList())
+//	fmt.Println("Start program", dtm.GetList())
 	cfg := dtm.ConfigDt{}
 	err:=dtm.LoadConfig("config.json",&cfg)
 	if err == nil {
@@ -25,15 +25,9 @@ func main() {
 
 
 	
-	/*	sr := dtm.DrillDataType{OperationList: make([]dtm.OperationOne, 0),
-			SteamCh:         make(chan dtm.OperationOne),
-			ScapeDataCh:     make(chan dtm.ScapeDataD),
-			ErrCh:           make(chan error, 2),
-			DoneCh:          make(chan struct{}),
-			DoneScapeCh:     make(chan struct{}),
-			ActiveOperation: -1,
-			Operationtype:dtm.DrillOperationConst,
-			Log:CreateLog(),
+	/*	sr := dtm.DrillDataType{
+			Log:createLog(),
+			cfg:&cfg,
 
 		}
 
@@ -53,7 +47,7 @@ func main() {
 	*/
 
 }
-func CreateLog() *logrus.Logger {
+func createLog() *logrus.Logger {
 	var log = logrus.New()
 	log.WithFields(logrus.Fields{
 		//"mode":   "[access_log]",

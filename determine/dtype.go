@@ -10,12 +10,13 @@ import (
 type (
 	//DrillDataType drill basic data struct
 	DrillDataType struct {
-		OperationList   []OperationOne
-		SteamCh         chan OperationOne
+		operationList   []OperationOne
+		summarysheet    []OperationOne
+		steamCh         chan OperationOne
 		ScapeDataCh     chan ScapeDataD
 		ErrCh           chan error
 		DoneCh          chan struct{}
-		DoneScapeCh     chan struct{}
+		DoneSummary     chan struct{}
 		ScapeFullData   bool
 		LastScapeData   ScapeDataD
 		ScapeData       ScapeDataD
@@ -28,7 +29,7 @@ type (
 			LastTripData      ScapeDataD
 			FlagChangeTrip    int
 		}
-		StartActiveOperation time.Time
+		startActiveOperation time.Time
 		//Operationtype   OperationtypeD
 		Log *logrus.Logger
 		mu  *sync.RWMutex
@@ -68,6 +69,7 @@ type (
 	}
 	//OperationOne description of one operation
 	OperationOne struct {
+		status string
 		startData, stopData, maxData, minData, sum, agv ScapeDataD
 		//buf_count,count int;
 		//buf:array [0..bufSize] of ageooscape_data;

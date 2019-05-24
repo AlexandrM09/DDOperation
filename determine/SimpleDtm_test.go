@@ -89,17 +89,9 @@ func TestElementaryDtm(t *testing.T) {
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
-	sr := DrillDataType{OperationList: make([]OperationOne, 0),
-		SteamCh:         make(chan OperationOne),
-		ScapeDataCh:     make(chan ScapeDataD),
-		ErrCh:           make(chan error, 2),
-		DoneCh:          make(chan struct{}),
-		DoneScapeCh:     make(chan struct{}),
-		ActiveOperation: -1,
-		//	Operationtype:   DrillOperationConst,
+	sr := DrillDataType{
 		Log: CLog(),
 		cfg: &cfg,
-		//mu:&sync.RWMutex{},
 	}
 
 	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source.zip"})
@@ -108,10 +100,18 @@ func TestElementaryDtm(t *testing.T) {
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
-	for i := 0; i < len(tm.Data.OperationList); i++ {
-		fmt.Fprintf(file, "%s | %s |%s \r\n", tm.Data.OperationList[i].startData.Time.Format("2006-01-02 15:04:05"),
-			tm.Data.OperationList[i].stopData.Time.Format("15:04:05"),
-			tm.Data.OperationList[i].Operaton)
+	data:=tm.GetOperationList()
+	for i := 0; i < len(data); i++ {
+		fmt.Fprintf(file, "%s | %s |%s \r\n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
+		data[i].stopData.Time.Format("15:04:05"),
+		data[i].Operaton)
+	}
+	
+	data=tm.GetSummarysheet()
+	for i := 0; i < len(data); i++ {
+		fmt.Printf("%s | %s |%s \r\n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
+		data[i].stopData.Time.Format("15:04:05"),
+		data[i].Operaton)
 	}
 }
 
@@ -124,17 +124,9 @@ func TestSimpleDtm(t *testing.T) {
 		t.Fatal("not load config file")
 	}
 
-	sr := DrillDataType{OperationList: make([]OperationOne, 0),
-		SteamCh:         make(chan OperationOne),
-		ScapeDataCh:     make(chan ScapeDataD),
-		ErrCh:           make(chan error, 2),
-		DoneCh:          make(chan struct{}),
-		DoneScapeCh:     make(chan struct{}),
-		ActiveOperation: -1,
-		//	Operationtype:   DrillOperationConst,
+	sr := DrillDataType{
 		Log: CLog(),
 		cfg: &cfg,
-		//mu:&sync.RWMutex{},
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
@@ -143,24 +135,24 @@ func TestSimpleDtm(t *testing.T) {
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
-	//<-time.After(2000 * time.Millisecond)
-	fmt.Println("count operation ", len(tm.Data.OperationList))
+	data:=tm.GetOperationList()
+	fmt.Println("count operation ", len(data))
 	fmt.Println("Start printing OperationList")
 
-	for i := 0; i < len(tm.Data.OperationList); i++ {
-		fmt.Printf("%s | %s |%s \n", tm.Data.OperationList[i].startData.Time.Format("2006-01-02 15:04:05"),
-			tm.Data.OperationList[i].stopData.Time.Format("15:04:05"),
-			tm.Data.OperationList[i].Operaton)
+	for i := 0; i < len(data); i++ {
+		fmt.Printf("%s | %s |%s \n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
+			data[i].stopData.Time.Format("15:04:05"),
+			data[i].Operaton)
 	}
-	if !(len(tm.Data.OperationList) == 3) {
+	if !(len(data) == 3) {
 		t.Errorf("the number of operations does not match")
 	}
 	neadres := [3]string{"Наращивание", "Промывка", "Бурение (слайд)"}
 	var dd OperationOne
 	var n int64
 
-	for i := 0; i < len(tm.Data.OperationList); i++ {
-		dd = tm.Data.OperationList[i]
+	for i := 0; i < len(data); i++ {
+		dd = data[i]
 		if !(neadres[i] == dd.Operaton) {
 			t.Errorf("incorrect operation definition")
 		}

@@ -66,7 +66,7 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 	res := checkOne9(d)
 	//fmt.Printf("Check1 res1=%v \n",res)
 	if res == 9 {
-		duratOp := int(d.ScapeData.Time.Sub(d.StartActiveOperation).Seconds())
+		duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
 		//nead check 4,5
 		if (d.ActiveOperation == 2) || (d.ActiveOperation == 9) {
 			res, _, _ := getMoveTrip(d)
@@ -150,12 +150,12 @@ func (o *Check4) Check(d *DrillDataType) (int, bool) {
 	if deltaDepht < 0.005 {
 		duratOp := int(d.ScapeData.Time.Sub(d.temp.LastTripData.Time).Seconds())
 		if duratOp > d.cfg.TimeIntervalMkTrip {
-			//you need to pass LastTripData
+			//you need to send LastTripData
 			d.temp.FlagChangeTrip = 1
 			return 9, false
 		}
 		if (-deltaDepht) > float32(d.cfg.MinLenforTrip) {
-			///you need to pass LastTripData
+			///you need to send LastTripData
 			d.temp.FlagChangeTrip = 1
 			return 5, false
 		}
