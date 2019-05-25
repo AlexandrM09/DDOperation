@@ -108,6 +108,7 @@ func TestElementaryDtm(t *testing.T) {
 	}
 	
 	data=tm.GetSummarysheet()
+	fmt.Printf("Start print Summarysheet len=%v \n",len(data))
 	for i := 0; i < len(data); i++ {
 		fmt.Printf("%s | %s |%s \r\n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
 		data[i].stopData.Time.Format("15:04:05"),

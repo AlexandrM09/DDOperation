@@ -12,7 +12,7 @@ import (
 	"os"
 	"sync"
 	"time"
-
+	"strconv"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,8 +20,6 @@ type (
 	listoperation []string
 	determineOne  interface {
 		Check(d *DrillDataType) (int, bool)
-		//Check(d *DrillDataType) (int,boll)//return num of operation, state of change operation
-		// CheckOne(d *DrillDataType) int
 	}
 	//SteamI basic interface for operations recognition
 	SteamI interface {
@@ -29,12 +27,25 @@ type (
 	}
 	//Determine basic data struct
 	Determine struct {
-		wg          *sync.WaitGroup
-		Data        *DrillDataType
-		Steam       SteamI
-		ListCheck   []determineOne
-		activecheck determineOne
-		waitTime    int
+		wg        *sync.WaitGroup
+		Data      *DrillDataType
+		Steam     SteamI
+		ListCheck []determineOne
+		//  activecheck determineOne
+		waitTime int
+		itemNew  struct {
+			flag      int
+			startflag int
+			startTime time.Time
+			//stopTime  time.Time
+			sumItemDr int
+			res       OperationOne
+			next      OperationOne
+			nextTime  struct {
+				flag  int
+				start time.Time
+			}
+		}
 	}
 )
 
@@ -91,12 +102,67 @@ func (dt *Determine) Summarysheet() {
 		select {
 		case <-dt.Data.DoneSummary:
 			{
-				dt.saveSummaryStr(&resStr)
+				if dt.itemNew.flag == 1 {
+					dt.saveSummaryStr(&dt.itemNew.res)
+				}
 				return
 			}
 		case resStr = <-dt.Data.steamCh:
 			{
-				dt.addSummaryStr(&resStr)
+				if dt.itemNew.flag == 0 {
+					if resStr.status == "start" {
+						//dt.itemNew.flag=1
+						fmt.Println("flag == 0, resStr.status == start time=",dt.itemNew.startTime)
+						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
+						dt.itemNew.startTime = resStr.startData.Time
+						//dt.itemNew.res=resStr
+					}
+					if resStr.status == "save" {
+						fmt.Println("flag == 0, resStr.status == save ")
+						
+						dt.itemNew.flag = 1
+						dt.itemNew.sumItemDr = 0
+						dt.itemNew.res = resStr
+						dt.itemNew.res.startData.Time = dt.itemNew.startTime
+						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
+					}
+
+				} else {
+					if resStr.status == "start" {
+						fmt.Println("flag == 1, resStr.status == start ")
+						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
+						if dt.itemNew.nextTime.flag == 0 {
+							dt.itemNew.nextTime.flag = 1
+							dt.itemNew.nextTime.start = resStr.startData.Time
+						}
+						
+					}
+					if resStr.status == "save" {
+						if resStr.Operaton==dt.itemNew.res.Operaton{
+							dt.itemNew.nextTime.flag = 0	
+						}
+						dt.itemNew.sumItemDr=0
+						if dt.itemNew.nextTime.flag ==1{
+						dt.itemNew.sumItemDr = int(resStr.stopData.Time.Sub(dt.itemNew.nextTime.start).Seconds())
+						}
+						fmt.Println("flag == 1, resStr.status == save, dur= ",strconv.Itoa(dt.itemNew.sumItemDr))
+						fmt.Println("TimeIntervalAll=", strconv.Itoa(dt.Data.cfg.TimeIntervalAll))
+						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
+						if dt.itemNew.sumItemDr > dt.Data.cfg.TimeIntervalAll {
+							fmt.Println("save op=",dt.itemNew.res.Operaton)
+							//dt.itemNew.nextTime.start
+							dt.addSummaryStr(&dt.itemNew.res)
+							dt.itemNew.flag = 1
+							//dt.itemNew.nextTime.flag = 0
+							dt.itemNew.res=resStr
+							
+
+							fmt.Println("after save time=",dt.itemNew.startTime)
+						}
+						
+					}
+
+				}
 			}
 		}
 
