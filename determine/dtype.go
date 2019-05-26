@@ -8,10 +8,16 @@ import (
 )
 
 type (
+	//SummarysheetT -type result list
+	SummarysheetT struct{
+		Sheet OperationOne
+		Details []OperationOne
+	}
 	//DrillDataType drill basic data struct
 	DrillDataType struct {
 		operationList   []OperationOne
-		summarysheet    []OperationOne
+		summarysheet    []SummarysheetT
+		
 		steamCh         chan OperationOne
 		ScapeDataCh     chan ScapeDataD
 		ErrCh           chan error

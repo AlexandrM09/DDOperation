@@ -95,7 +95,7 @@ func TestElementaryDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source.zip"})
-	_ = tm.Start(30)
+	_ = tm.Start(29)
 	err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
@@ -107,12 +107,19 @@ func TestElementaryDtm(t *testing.T) {
 		data[i].Operaton)
 	}
 	
-	data=tm.GetSummarysheet()
+	data2:=tm.GetSummarysheet()
 	fmt.Printf("Start print Summarysheet len=%v \n",len(data))
-	for i := 0; i < len(data); i++ {
-		fmt.Printf("%s | %s |%s \r\n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
-		data[i].stopData.Time.Format("15:04:05"),
-		data[i].Operaton)
+	for i := 0; i < len(data2); i++ {
+		fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.startData.Time.Format("2006-01-02 15:04:05"),
+		data2[i].Sheet.stopData.Time.Format("15:04:05"),
+		data2[i].Sheet.Operaton)
+		d3:=data2[i].Details
+		//fmt.Printf("len Details =%v \n",len(d3))
+		for j:=0;j<len(d3);j++{
+			fmt.Printf("____ %s | %s |%s \r\n", d3[j].startData.Time.Format("15:04:05"),
+			d3[j].stopData.Time.Format("15:04:05"),
+			d3[j].Operaton)
+		}
 	}
 }
 
@@ -131,7 +138,7 @@ func TestSimpleDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
-	_ = tm.Start(25)
+	_ = tm.Start(29)
 	err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")

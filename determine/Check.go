@@ -68,7 +68,7 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 	if res == 9 {
 		duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
 		//nead check 4,5
-		if (d.ActiveOperation == 2) || (d.ActiveOperation == 9) {
+		//if (d.ActiveOperation == 1) || (d.ActiveOperation == 9) {
 			res, _, _ := getMoveTrip(d)
 			if math.Abs(float64(res)) > float64(d.cfg.MinLenforTrip) {
 				d.temp.LastTripData = d.ScapeData
@@ -78,14 +78,14 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 				} //down
 				return 4, true //up
 			}
-		}
+		//}
 		//	fmt.Printf("duratOp=%v, start %v \n",duratOp,d.StartActiveOperation)
-		if (duratOp < d.cfg.TimeIntervalMaxMkconn) || (d.ActiveOperation == -1) {
-			return 1, false
+		if (duratOp < d.cfg.TimeIntervalMaxMkconn)  {
+			return 1, false//|| ((d.ActiveOperation !=1)&&(d.ActiveOperation !=9))
 		}
-		if d.ActiveOperation == 1 {
-			return 9, true
-		}
+		//if d.ActiveOperation == 1 {
+		//	return 9, true
+		//}
 		return 9, false
 	}
 	return -1, false

@@ -34,12 +34,13 @@ type (
 		//  activecheck determineOne
 		waitTime int
 		itemNew  struct {
-			flag      int
+			resSheet  SummarysheetT
+			firstflag      int
 			startflag int
 			startTime time.Time
 			//stopTime  time.Time
 			sumItemDr int
-			res       OperationOne
+			//res       OperationOne
 			next      OperationOne
 			nextTime  struct {
 				flag  int
@@ -102,68 +103,89 @@ func (dt *Determine) Summarysheet() {
 		select {
 		case <-dt.Data.DoneSummary:
 			{
-				if dt.itemNew.flag == 1 {
-					dt.saveSummaryStr(&dt.itemNew.res)
-				}
+			//	if dt.itemNew.flag == 1 {
+			//		dt.saveSummaryStr(&dt.itemNew.res)
+			//	}
+			len2:=len(dt.itemNew.resSheet.Details)
+						fmt.Println("save op=",dt.itemNew.resSheet.Sheet.Operaton)
+						//dt.itemNew.nextTime.flag = 0
+						dt.itemNew.resSheet.Sheet.stopData=dt.itemNew.resSheet.Details[len2-1].stopData
+						dt.addSummaryStr(&dt.itemNew.resSheet)
 				return
 			}
 		case resStr = <-dt.Data.steamCh:
 			{
-				if dt.itemNew.flag == 0 {
+				if dt.itemNew.firstflag== 0 {
 					if resStr.status == "start" {
 						//dt.itemNew.flag=1
-						fmt.Println("flag == 0, resStr.status == start time=",dt.itemNew.startTime)
-						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
+						fmt.Println("firstflag == 0, resStr.status == start time=",dt.itemNew.startTime)
+						fmt.Println("newData=",resStr.Operaton," resSheet epty")
 						dt.itemNew.startTime = resStr.startData.Time
 						//dt.itemNew.res=resStr
 					}
 					if resStr.status == "save" {
-						fmt.Println("flag == 0, resStr.status == save ")
+						fmt.Println("firstflag == 0, resStr.status == save ")
 						
-						dt.itemNew.flag = 1
+						dt.itemNew.firstflag = 1
 						dt.itemNew.sumItemDr = 0
-						dt.itemNew.res = resStr
-						dt.itemNew.res.startData.Time = dt.itemNew.startTime
-						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
+						dt.itemNew.resSheet.Details=make([]OperationOne,1,10)
+						dt.itemNew.resSheet.Sheet = resStr
+					//	dt.itemNew.resSheet.Sheet.startData.Time = dt.itemNew.startTime
+						dt.itemNew.resSheet.Details[0]=resStr
+						fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
 					}
-
-				} else {
+					continue
+				}
+				 if dt.itemNew.firstflag== 1  {
 					if resStr.status == "start" {
-						fmt.Println("flag == 1, resStr.status == start ")
-						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
+						fmt.Println("fistflag == 1, resStr.status == start ")
+						fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
+						len:=len(dt.itemNew.resSheet.Details)
+						fmt.Println("len Details =",len," last op details=",dt.itemNew.resSheet.Details[len-1].Operaton)
 						if dt.itemNew.nextTime.flag == 0 {
 							dt.itemNew.nextTime.flag = 1
 							dt.itemNew.nextTime.start = resStr.startData.Time
 						}
-						
+					   if resStr.Operaton==dt.itemNew.resSheet.Sheet.Operaton{
+						dt.itemNew.nextTime.flag = 0
+					}	
 					}
 					if resStr.status == "save" {
-						if resStr.Operaton==dt.itemNew.res.Operaton{
-							dt.itemNew.nextTime.flag = 0	
-						}
 						dt.itemNew.sumItemDr=0
 						if dt.itemNew.nextTime.flag ==1{
 						dt.itemNew.sumItemDr = int(resStr.stopData.Time.Sub(dt.itemNew.nextTime.start).Seconds())
 						}
-						fmt.Println("flag == 1, resStr.status == save, dur= ",strconv.Itoa(dt.itemNew.sumItemDr))
-						fmt.Println("TimeIntervalAll=", strconv.Itoa(dt.Data.cfg.TimeIntervalAll))
-						fmt.Println("newData=",resStr.Operaton," item=",dt.itemNew.res.Operaton)
-						if dt.itemNew.sumItemDr > dt.Data.cfg.TimeIntervalAll {
-							fmt.Println("save op=",dt.itemNew.res.Operaton)
-							//dt.itemNew.nextTime.start
-							dt.addSummaryStr(&dt.itemNew.res)
-							dt.itemNew.flag = 1
-							//dt.itemNew.nextTime.flag = 0
-							dt.itemNew.res=resStr
-							
-
-							fmt.Println("after save time=",dt.itemNew.startTime)
+						fmt.Println("fistflag == 1, resStr.status == save, dur= ",strconv.Itoa(dt.itemNew.sumItemDr))
+						fmt.Println("TimeInterval for save=", strconv.Itoa(dt.Data.cfg.TimeIntervalAll))
+						fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
+						
+						if (dt.itemNew.sumItemDr < dt.Data.cfg.TimeIntervalAll) {
+							dt.itemNew.resSheet.Details=append(dt.itemNew.resSheet.Details,resStr)
+							len:=len(dt.itemNew.resSheet.Details)
+							fmt.Println("save Details, len Details =",len," last op details=",dt.itemNew.resSheet.Details[len-1].Operaton)
+							continue
 						}
+						//append new sheet
+						len2:=len(dt.itemNew.resSheet.Details)
+						fmt.Println("save op=",dt.itemNew.resSheet.Sheet.Operaton)
+						dt.itemNew.nextTime.flag = 0
+						dt.itemNew.resSheet.Sheet.stopData=dt.itemNew.resSheet.Details[len2-1].stopData
+						dt.addSummaryStr(&dt.itemNew.resSheet)
+						dt.itemNew.resSheet.Sheet=resStr
+						dt.itemNew.resSheet.Details=nil
+						dt.itemNew.resSheet.Details=make([]OperationOne,1,10)
+						dt.itemNew.resSheet.Details[0] = resStr
+						//fmt.Println("after save time=",dt.itemNew.startTime)
+						len3:=len(dt.itemNew.resSheet.Details)
+						fmt.Println(" resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
+						fmt.Println("first Details, len Details =",len3," last op details=",dt.itemNew.resSheet.Details[len3-1].Operaton)
+					
 						
 					}
 
 				}
 			}
+		default:;
 		}
 
 	}
@@ -314,9 +336,14 @@ func (dt *Determine) saveoperation() {
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Stop and save  operation " + dt.Data.cfg.Operationtype[dt.Data.ActiveOperation])
 }
-func (dt *Determine) addSummaryStr(p *OperationOne) {
-	if p.status == "save" {
-		dt.Data.summarysheet = append(dt.Data.summarysheet, *p)
+func (dt *Determine) addSummaryStr(p *SummarysheetT) {
+	if p.Sheet.status == "save" {
+		//ss:=SummarysheetT{Sheet:p,Details:make([]OperationOne,1)}
+		//ss.Details=append(ss.Details,)
+		rs:= SummarysheetT{Sheet:p.Sheet}
+		rs.Details=p.Details[0 : len(p.Details)]
+		//fmt.Println("Save item Summarysheet ",rs.Details)
+		dt.Data.summarysheet = append(dt.Data.summarysheet,rs)
 	}
 	return
 }
@@ -325,7 +352,7 @@ func (dt *Determine) saveSummaryStr(p *OperationOne) {
 }
 
 //GetSummarysheet - return summary sheet
-func (dt *Determine) GetSummarysheet() []OperationOne {
+func (dt *Determine) GetSummarysheet() []SummarysheetT {
 	return dt.Data.summarysheet
 }
 
@@ -359,7 +386,8 @@ var checkInt = [10]int{0, 1, 2, 3, 4, 5, 0, 6, 7, 8}
 //NewDetermine  create new List determine
 func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 	ds.operationList = make([]OperationOne, 0, 500)
-	ds.summarysheet = make([]OperationOne, 0, 200)
+	ds.summarysheet = make([]SummarysheetT, 0, 200)
+	//ds.summarysheet.Details= make([]OperationOne, 0, 10)
 	ds.steamCh = make(chan OperationOne)
 	ds.ScapeDataCh = make(chan ScapeDataD)
 	ds.ErrCh = make(chan error, 2)
