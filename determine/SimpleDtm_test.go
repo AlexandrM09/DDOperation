@@ -88,14 +88,14 @@ func TestElementaryDtm(t *testing.T) {
 	}
 	defer file.Close()
 	fmt.Println("Load config")
-	cfg := ConfigDt{}
-	errf = LoadConfigYaml("../config.yaml", &cfg)
+	Cfg := ConfigDt{}
+	errf = LoadConfigYaml("../config.yaml", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
 	sr := DrillDataType{
 		Log: CLog(),
-		cfg: &cfg,
+		Cfg: &Cfg,
 	}
 
 	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source1.zip"})
@@ -106,8 +106,8 @@ func TestElementaryDtm(t *testing.T) {
 	}
 	data := tm.GetOperationList()
 	for i := 0; i < len(data); i++ {
-		fmt.Fprintf(file, "%s | %s |%s \r\n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
-			data[i].stopData.Time.Format("15:04:05"),
+		fmt.Fprintf(file, "%s | %s |%s \r\n", data[i].StartData.Time.Format("2006-01-02 15:04:05"),
+			data[i].StopData.Time.Format("15:04:05"),
 			data[i].Operaton)
 	}
 	FileRes, err2 := ioutil.ReadFile("./result1.txt")
@@ -123,35 +123,35 @@ func TestElementaryDtm(t *testing.T) {
 	data2 := tm.GetSummarysheet()
 	fmt.Printf("Start print Summarysheet len=%v \n", len(data))
 	for i := 0; i < len(data2); i++ {
-		fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.startData.Time.Format("2006-01-02 15:04:05"),
-			data2[i].Sheet.stopData.Time.Format("15:04:05"),
+		//fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+		//	data2[i].Sheet.StopData.Time.Format("15:04:05"),
+		//	data2[i].Sheet.Operaton)
+		sres = fmt.Sprintf("%s | %s |%s ", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+			data2[i].Sheet.StopData.Time.Format("15:04:05"),
 			data2[i].Sheet.Operaton)
-		sres = fmt.Sprintf("%s | %s |%s \r", data2[i].Sheet.startData.Time.Format("2006-01-02 15:04:05"),
-			data2[i].Sheet.stopData.Time.Format("15:04:05"),
-			data2[i].Sheet.Operaton)
-		fmt.Println("   n=", strconv.Itoa(int(n)))
-		fmt.Println("str=", sres)
-		fmt.Println("r=", resLines[n])
-		if !(sres == resLines[n]) {
+			fmt.Println(sres)
+		if (!(sres == resLines[n])) && (n > 0) {
 			t.Errorf("string not equale result1 ")
-
+			fmt.Println("n=", strconv.Itoa(int(n)))
+			fmt.Println("str=", sres)
+			fmt.Println("r=", resLines[n])
 		}
 		n = n + 1
 		d3 := data2[i].Details
 		//fmt.Printf("len Details =%v \n",len(d3))
 		for j := 0; j < len(d3); j++ {
-			fmt.Printf("____ %s | %s |%s \r\n", d3[j].startData.Time.Format("15:04:05"),
-				d3[j].stopData.Time.Format("15:04:05"),
+			//fmt.Printf("____ %s | %s |%s \r\n", d3[j].StartData.Time.Format("15:04:05"),
+			//	d3[j].StopData.Time.Format("15:04:05"),
+			//	d3[j].Operaton)
+			sres = fmt.Sprintf("____ %s | %s |%s ", d3[j].StartData.Time.Format("15:04:05"),
+				d3[j].StopData.Time.Format("15:04:05"),
 				d3[j].Operaton)
-			sres = fmt.Sprintf("____ %s | %s |%s ", d3[j].startData.Time.Format("15:04:05"),
-				d3[j].stopData.Time.Format("15:04:05"),
-				d3[j].Operaton)
-			fmt.Println("   n=", strconv.Itoa(int(n)))
-			fmt.Println(" str=", sres)
-			fmt.Println("r=", resLines[n])
+				fmt.Println(sres)
 			if !(sres == resLines[n]) {
 				t.Errorf("string not equale result1 ")
-
+				fmt.Println("n=", strconv.Itoa(int(n)))
+				fmt.Println("str=", sres)
+				fmt.Println("r=", resLines[n])
 			}
 			n = n + 1
 		}
@@ -161,15 +161,15 @@ func TestElementaryDtm(t *testing.T) {
 //very simple determine test
 func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start test")
-	cfg := ConfigDt{}
-	errf := LoadConfig("../config.json", &cfg)
+	Cfg := ConfigDt{}
+	errf := LoadConfig("../config.json", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
 
 	sr := DrillDataType{
 		Log: CLog(),
-		cfg: &cfg,
+		Cfg: &Cfg,
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
@@ -183,8 +183,8 @@ func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start printing OperationList")
 
 	for i := 0; i < len(data); i++ {
-		fmt.Printf("%s | %s |%s \n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
-			data[i].stopData.Time.Format("15:04:05"),
+		fmt.Printf("%s | %s |%s \n", data[i].StartData.Time.Format("2006-01-02 15:04:05"),
+			data[i].StopData.Time.Format("15:04:05"),
 			data[i].Operaton)
 	}
 	if !(len(data) == 3) {
@@ -199,7 +199,7 @@ func TestSimpleDtm(t *testing.T) {
 		if !(neadres[i] == dd.Operaton) {
 			t.Errorf("incorrect operation definition")
 		}
-		n = int64(dd.stopData.Time.Sub(dd.startData.Time) / time.Second)
+		n = int64(dd.StopData.Time.Sub(dd.StartData.Time) / time.Second)
 		if !(n == 9) {
 			t.Errorf("incorrect time duration %v", n)
 		}

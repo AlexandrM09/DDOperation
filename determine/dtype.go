@@ -39,7 +39,7 @@ type (
 		//Operationtype   OperationtypeD
 		Log *logrus.Logger
 		mu  *sync.RWMutex
-		cfg *ConfigDt
+		Cfg *ConfigDt
 	}
 	//OperationtypeD array drilling type operation
 	/*
@@ -53,6 +53,7 @@ type (
 	   7 - Бурение ротор
 	   8 - Бурение (слайд)
 	   9 - ПЗР
+	   10- КНБК
 	*/
 	OperationtypeD [15]string
 	//ScapeDataD time series data
@@ -76,7 +77,7 @@ type (
 	//OperationOne description of one operation
 	OperationOne struct {
 		status string
-		startData, stopData, maxData, minData, sum, agv ScapeDataD
+		StartData, StopData, maxData, minData, sum, agv ScapeDataD
 		//buf_count,count int;
 		//buf:array [0..bufSize] of ageooscape_data;
 		Operaton string

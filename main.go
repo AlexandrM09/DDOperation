@@ -6,45 +6,48 @@ import (
 	//"time"
 	//"encoding/json"
 	//"log"
+	"log"
 	"os"
-  _ "gopkg.in/yaml.v2"
-    dtm "./determine"
+
+	dtm "./determine"
 	"github.com/sirupsen/logrus"
+	_ "gopkg.in/yaml.v2"
 	//	"sync"
 )
 
 func main() {
-//	fmt.Println("Start program", dtm.GetList())
-	cfg := dtm.ConfigDt{}
-	err:=dtm.LoadConfig("config.json",&cfg)
-	if err == nil {
-		fmt.Println(cfg)
-	} else {
-		fmt.Println("not parse config.json", cfg)
+	Cfg := dtm.ConfigDt{}
+	errf := dtm.LoadConfigYaml("./config.yaml", &Cfg)
+	if errf != nil {
+		log.Fatal("not load config file")
+	}
+	sr := dtm.DrillDataType{
+		Log: createLog(),
+		Cfg: &Cfg,
+	}
+
+	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{FilePath: "./source/source2.zip"})
+	_ = tm.Start(40)
+	err := tm.Wait()
+	if err != nil {
+		log.Fatal("error:time limit exceeded")
 	}
 
 
-	
-	/*	sr := dtm.DrillDataType{
-			Log:createLog(),
-			cfg:&cfg,
+	data2 := tm.GetSummarysheet()
+	fmt.Printf("Start print Summarysheet len=%v \n", len(data2))
+	for i := 0; i < len(data2); i++ {
+		fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+			data2[i].Sheet.StopData.Time.Format("15:04:05"),
+			data2[i].Sheet.Operaton)
+		d3 := data2[i].Details
+		for j := 0; j < len(d3); j++ {
+			fmt.Printf("____ %s | %s |%s \r\n", d3[j].StartData.Time.Format("15:04:05"),
+				d3[j].StopData.Time.Format("15:04:05"),
+				d3[j].Operaton)
 
 		}
-
-
-		tm := dtm.NewDetermine(&sr, &dtm.SteamRND{})
-		_ = tm.Start(5)
-		_=tm.Wait()
-	*/
-
-	/*decoder = json.NewDecoder(file2)
-	  config := new(Config)
-	  err = decoder.Decode(&config)
-	  if err != nil {
-	  	// handle it
-	  	fmt.Printf("%+v",config)
-	  }
-	*/
+	}
 
 }
 func createLog() *logrus.Logger {

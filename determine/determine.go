@@ -13,7 +13,7 @@ import (
 	"os"
 	"sync"
 	"time"
-	"strconv"
+	//"strconv"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
@@ -109,9 +109,9 @@ func (dt *Determine) Summarysheet() {
 			//		dt.saveSummaryStr(&dt.itemNew.res)
 			//	}
 			len2:=len(dt.itemNew.resSheet.Details)
-						fmt.Println("save op=",dt.itemNew.resSheet.Sheet.Operaton)
+					//	fmt.Println("save op=",dt.itemNew.resSheet.Sheet.Operaton)
 						//dt.itemNew.nextTime.flag = 0
-						dt.itemNew.resSheet.Sheet.stopData=dt.itemNew.resSheet.Details[len2-1].stopData
+						dt.itemNew.resSheet.Sheet.StopData=dt.itemNew.resSheet.Details[len2-1].StopData
 						dt.addSummaryStr(&dt.itemNew.resSheet)
 				return
 			}
@@ -120,33 +120,33 @@ func (dt *Determine) Summarysheet() {
 				if dt.itemNew.firstflag== 0 {
 					if resStr.status == "start" {
 						//dt.itemNew.flag=1
-						fmt.Println("firstflag == 0, resStr.status == start time=",dt.itemNew.startTime)
-						fmt.Println("newData=",resStr.Operaton," resSheet epty")
-						dt.itemNew.startTime = resStr.startData.Time
+					//	fmt.Println("firstflag == 0, resStr.status == start time=",dt.itemNew.startTime)
+					//	fmt.Println("newData=",resStr.Operaton," resSheet epty")
+						dt.itemNew.startTime = resStr.StartData.Time
 						//dt.itemNew.res=resStr
 					}
 					if resStr.status == "save" {
-						fmt.Println("firstflag == 0, resStr.status == save ")
+					//	fmt.Println("firstflag == 0, resStr.status == save ")
 						
 						dt.itemNew.firstflag = 1
 						dt.itemNew.sumItemDr = 0
 						dt.itemNew.resSheet.Details=make([]OperationOne,1,10)
 						dt.itemNew.resSheet.Sheet = resStr
-					//	dt.itemNew.resSheet.Sheet.startData.Time = dt.itemNew.startTime
+					//	dt.itemNew.resSheet.Sheet.StartData.Time = dt.itemNew.startTime
 						dt.itemNew.resSheet.Details[0]=resStr
-						fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
+					//	fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
 					}
 					continue
 				}
 				 if dt.itemNew.firstflag== 1  {
 					if resStr.status == "start" {
-						fmt.Println("fistflag == 1, resStr.status == start ")
-						fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
-						len:=len(dt.itemNew.resSheet.Details)
-						fmt.Println("len Details =",len," last op details=",dt.itemNew.resSheet.Details[len-1].Operaton)
+					//	fmt.Println("fistflag == 1, resStr.status == start ")
+					//	fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
+					//	len:=len(dt.itemNew.resSheet.Details)
+					//	fmt.Println("len Details =",len," last op details=",dt.itemNew.resSheet.Details[len-1].Operaton)
 						if dt.itemNew.nextTime.flag == 0 {
 							dt.itemNew.nextTime.flag = 1
-							dt.itemNew.nextTime.start = resStr.startData.Time
+							dt.itemNew.nextTime.start = resStr.StartData.Time
 						}
 					   if resStr.Operaton==dt.itemNew.resSheet.Sheet.Operaton{
 						dt.itemNew.nextTime.flag = 0
@@ -155,32 +155,32 @@ func (dt *Determine) Summarysheet() {
 					if resStr.status == "save" {
 						dt.itemNew.sumItemDr=0
 						if dt.itemNew.nextTime.flag ==1{
-						dt.itemNew.sumItemDr = int(resStr.stopData.Time.Sub(dt.itemNew.nextTime.start).Seconds())
+						dt.itemNew.sumItemDr = int(resStr.StopData.Time.Sub(dt.itemNew.nextTime.start).Seconds())
 						}
-						fmt.Println("fistflag == 1, resStr.status == save, dur= ",strconv.Itoa(dt.itemNew.sumItemDr))
-						fmt.Println("TimeInterval for save=", strconv.Itoa(dt.Data.cfg.TimeIntervalAll))
-						fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
+					//	fmt.Println("fistflag == 1, resStr.status == save, dur= ",strconv.Itoa(dt.itemNew.sumItemDr))
+					//	fmt.Println("TimeInterval for save=", strconv.Itoa(dt.Data.Cfg.TimeIntervalAll))
+					//	fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
 						
-						if (dt.itemNew.sumItemDr < dt.Data.cfg.TimeIntervalAll) {
+						if (dt.itemNew.sumItemDr < dt.Data.Cfg.TimeIntervalAll) {
 							dt.itemNew.resSheet.Details=append(dt.itemNew.resSheet.Details,resStr)
-							len:=len(dt.itemNew.resSheet.Details)
-							fmt.Println("save Details, len Details =",len," last op details=",dt.itemNew.resSheet.Details[len-1].Operaton)
+					//		len:=len(dt.itemNew.resSheet.Details)
+					//		fmt.Println("save Details, len Details =",len," last op details=",dt.itemNew.resSheet.Details[len-1].Operaton)
 							continue
 						}
 						//append new sheet
 						len2:=len(dt.itemNew.resSheet.Details)
-						fmt.Println("save op=",dt.itemNew.resSheet.Sheet.Operaton)
+						//fmt.Println("save op=",dt.itemNew.resSheet.Sheet.Operaton)
 						dt.itemNew.nextTime.flag = 0
-						dt.itemNew.resSheet.Sheet.stopData=dt.itemNew.resSheet.Details[len2-1].stopData
+						dt.itemNew.resSheet.Sheet.StopData=dt.itemNew.resSheet.Details[len2-1].StopData
 						dt.addSummaryStr(&dt.itemNew.resSheet)
 						dt.itemNew.resSheet.Sheet=resStr
 						dt.itemNew.resSheet.Details=nil
 						dt.itemNew.resSheet.Details=make([]OperationOne,1,10)
 						dt.itemNew.resSheet.Details[0] = resStr
 						//fmt.Println("after save time=",dt.itemNew.startTime)
-						len3:=len(dt.itemNew.resSheet.Details)
-						fmt.Println(" resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
-						fmt.Println("first Details, len Details =",len3," last op details=",dt.itemNew.resSheet.Details[len3-1].Operaton)
+					//	len3:=len(dt.itemNew.resSheet.Details)
+					//	fmt.Println(" resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
+					//	fmt.Println("first Details, len Details =",len3," last op details=",dt.itemNew.resSheet.Details[len3-1].Operaton)
 					
 						
 					}
@@ -308,14 +308,14 @@ func (dt *Determine) startnewoperation() {
 		tempData = dt.Data.temp.LastTripData
 	}
 	dt.Data.operationList = append(dt.Data.operationList,
-		OperationOne{Operaton: dt.Data.cfg.Operationtype[dt.Data.ActiveOperation], startData: tempData, status: "start"})
+		OperationOne{Operaton: dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation], StartData: tempData, status: "start"})
 	dt.Data.temp.LastStartData = tempData
 	dt.Data.startActiveOperation = tempData.Time
 	dt.Data.steamCh <- dt.Data.operationList[len(dt.Data.operationList)-1]
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
-	}).Info("Start operation " + dt.Data.cfg.Operationtype[dt.Data.ActiveOperation])
+	}).Info("Start operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation])
 }
 func (dt *Determine) saveoperation() {
 	//
@@ -327,16 +327,16 @@ func (dt *Determine) saveoperation() {
 	}
 	if dt.Data.temp.FlagChangeTrip == 1 {
 		//dt.Data.temp.FlagChangeTrip=0
-		dt.Data.operationList[len-1].stopData = dt.Data.temp.LastTripData
+		dt.Data.operationList[len-1].StopData = dt.Data.temp.LastTripData
 	} else {
-		dt.Data.operationList[len-1].stopData = dt.Data.LastScapeData
+		dt.Data.operationList[len-1].StopData = dt.Data.LastScapeData
 	}
 	dt.Data.operationList[len-1].status = "save"
 	dt.Data.steamCh <- dt.Data.operationList[len-1]
 	dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
-	}).Info("Stop and save  operation " + dt.Data.cfg.Operationtype[dt.Data.ActiveOperation])
+	}).Info("Stop and save  operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation])
 }
 func (dt *Determine) addSummaryStr(p *SummarysheetT) {
 	if p.Sheet.status == "save" {
@@ -378,7 +378,7 @@ func LoadConfig(path string, cf *ConfigDt) error {
 	decoder := json.NewDecoder(file)
 	//json.Unmarshal()
 	err = decoder.Decode(&cf)
-	//fmt.Printf("cfg=%v \n",cf)
+	//fmt.Printf("Cfg=%v \n",cf)
 	return nil
 }
 //LoadConfigYaml - load config file yaml
@@ -396,7 +396,7 @@ func LoadConfigYaml(path string, cf *ConfigDt) error {
 }
 
 // num interface check
-var checkInt = [10]int{0, 1, 2, 3, 4, 5, 0, 6, 7, 8}
+var checkInt = [11]int{0, 1, 2, 3, 4, 5, 0, 6, 7, 8,9}
 
 //NewDetermine  create new List determine
 func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
@@ -412,6 +412,6 @@ func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 	return &Determine{Data: ds,
 		Steam: sm,
 		ListCheck: []determineOne{&Check0{}, &Check1{},
-			&Check2{}, &Check3{}, &Check4{}, &Check5{}, &Check7{}, &Check8{}, &Check9{}},
+			&Check2{}, &Check3{}, &Check4{}, &Check5{}, &Check7{}, &Check8{}, &Check9{},&Check10{}},
 	}
 }
