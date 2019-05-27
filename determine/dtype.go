@@ -3,7 +3,7 @@ package determine
 import (
 	"sync"
 	"time"
-
+	_"gopkg.in/yaml.v2"
 	"github.com/sirupsen/logrus"
 )
 
@@ -95,36 +95,36 @@ var DrillOperationConst = [15]string{"Бурение",
 	"Бурение (ротор)", "Бурение (слайд)", "ПЗР", "", "", "", "", ""}
 */
 
-//ScapeParamtype - scape parametrs json type
+//ScapeParamtype - scape parametrs yaml
 type ScapeParamtype struct {
-	Name  string  `json:"name,string"`
-	Gid   int     `json:"gid"`
-	Delta float32 `json:"delta"`
+	Name  string  `yaml:"Name"`
+	Gid   int     `yaml:"Gid"`
+	Delta float32 `yaml:"Delta"`
 }
-
-//ConfigDt - configuration structure json type
+//ConfigDt - configuration structure yaml type
 type ConfigDt struct {
-	Pmin                     float32
-	Flowmin                  float32
-	Rotationmin              float32
-	PresFlowCheck            int
-	DephtTool                float32
-	RotorSl                  int
-	DirectionalCheck         int
-	BeforeDrillString        string
-	ShowParamRotSl           int
-	ShowParamCircl           int
-	ShowParamWiper           int
-	ChangeCircWiperfromDrill int
-	Avgstand                 float32
-	Wbitmax                  float32
-	Pressmax                 float32
-	TimeIntervalAll          int
-	TimeIntervalMkTrip       int
-	TimeIntervalMaxMkconn    int
-	MinLenforTrip            int
-	ScapeParam               []ScapeParamtype
-	Operationtype            [15]string
+	Pmin                     float32          `yaml:"Pmin"`
+	Flowmin                  float32          `yaml:"Flowmin"`
+	Rotationmin              float32          `yaml:"Rotationmin"`
+	PresFlowCheck            int              `yaml:"PresFlowCheck"`
+	DephtTool                float32          `yaml:"DephtTool"`
+	RotorSl                  int              `yaml:"RotorSl "`
+	DirectionalCheck         int              `yaml:"DirectionalCheck"`
+	BeforeDrillString        string           `yaml:"BeforeDrillString"`
+	ShowParamRotSl           int              `yaml:"ShowParamRotSl "`
+	ShowParamCircl           int              `yaml:"ShowParamCircl"`
+	ShowParamWiper           int              `yaml:"ShowParamWiper"`
+	ChangeCircWiperfromDrill int              `yaml:"ChangeCircWiperfromDrill"`
+	Avgstand                 float32          `yaml:"Avgstand"`
+	Wbitmax                  float32          `yaml:"Wbitmax"`
+	Pressmax                 float32          `yaml:"Pressmax"`
+	TimeIntervalAll          int              `yaml:"TimeIntervalAll"`
+	TimeIntervalMkTrip       int              `yaml:"TimeIntervalMkTrip"`
+	TimeIntervalMaxMkconn    int              `yaml:"TimeIntervalMaxMkconn"`
+	TimeIntervalKNBK         int              `yaml:"TimeIntervalKNBK"`
+	MinLenforTrip            int              `yaml:"MinLenforTrip"`
+	ScapeParam               []ScapeParamtype `yaml:"Scapeparam"`
+	Operationtype            [15]string       `yaml:"Operationtype"`
 }
 
 /*

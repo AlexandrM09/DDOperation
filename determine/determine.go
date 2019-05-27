@@ -6,6 +6,7 @@ package determine
 */
 
 import (
+	"io/ioutil"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -14,6 +15,7 @@ import (
 	"time"
 	"strconv"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 type (
@@ -366,7 +368,7 @@ func (dt *Determine) Stop() {
 	dt.Data.DoneCh <- struct{}{}
 }
 
-//LoadConfig - load config file
+//LoadConfig - load config file json
 func LoadConfig(path string, cf *ConfigDt) error {
 	file, err := os.Open(path)
 	defer file.Close()
@@ -377,6 +379,19 @@ func LoadConfig(path string, cf *ConfigDt) error {
 	//json.Unmarshal()
 	err = decoder.Decode(&cf)
 	//fmt.Printf("cfg=%v \n",cf)
+	return nil
+}
+//LoadConfigYaml - load config file yaml
+func LoadConfigYaml(path string, cf *ConfigDt) error {
+	yamlFile, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(yamlFile, &cf)
+		//json.Unmarshal()
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

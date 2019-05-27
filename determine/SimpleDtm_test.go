@@ -1,6 +1,10 @@
 package determine
 
 import (
+	"io/ioutil"
+	"strconv"
+	"strings"
+
 	//"sync"
 	"fmt"
 	"os"
@@ -85,7 +89,7 @@ func TestElementaryDtm(t *testing.T) {
 	defer file.Close()
 	fmt.Println("Load config")
 	cfg := ConfigDt{}
-	errf = LoadConfig("../config.json", &cfg)
+	errf = LoadConfigYaml("../config.yaml", &cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
@@ -94,31 +98,62 @@ func TestElementaryDtm(t *testing.T) {
 		cfg: &cfg,
 	}
 
-	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source.zip"})
+	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source1.zip"})
 	_ = tm.Start(29)
 	err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
-	data:=tm.GetOperationList()
+	data := tm.GetOperationList()
 	for i := 0; i < len(data); i++ {
 		fmt.Fprintf(file, "%s | %s |%s \r\n", data[i].startData.Time.Format("2006-01-02 15:04:05"),
-		data[i].stopData.Time.Format("15:04:05"),
-		data[i].Operaton)
+			data[i].stopData.Time.Format("15:04:05"),
+			data[i].Operaton)
 	}
-	
-	data2:=tm.GetSummarysheet()
-	fmt.Printf("Start print Summarysheet len=%v \n",len(data))
+	FileRes, err2 := ioutil.ReadFile("./result1.txt")
+	if err2 != nil {
+		t.Errorf("file not find result1.txt ")
+	}
+	resLines := strings.Split(string(FileRes), "\r\n")
+	if len(resLines) == 0 {
+		t.Errorf("result1.txt is empty")
+	}
+	sres := ""
+	var n int
+	data2 := tm.GetSummarysheet()
+	fmt.Printf("Start print Summarysheet len=%v \n", len(data))
 	for i := 0; i < len(data2); i++ {
 		fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.startData.Time.Format("2006-01-02 15:04:05"),
-		data2[i].Sheet.stopData.Time.Format("15:04:05"),
-		data2[i].Sheet.Operaton)
-		d3:=data2[i].Details
+			data2[i].Sheet.stopData.Time.Format("15:04:05"),
+			data2[i].Sheet.Operaton)
+		sres = fmt.Sprintf("%s | %s |%s \r", data2[i].Sheet.startData.Time.Format("2006-01-02 15:04:05"),
+			data2[i].Sheet.stopData.Time.Format("15:04:05"),
+			data2[i].Sheet.Operaton)
+		fmt.Println("   n=", strconv.Itoa(int(n)))
+		fmt.Println("str=", sres)
+		fmt.Println("r=", resLines[n])
+		if !(sres == resLines[n]) {
+			t.Errorf("string not equale result1 ")
+
+		}
+		n = n + 1
+		d3 := data2[i].Details
 		//fmt.Printf("len Details =%v \n",len(d3))
-		for j:=0;j<len(d3);j++{
+		for j := 0; j < len(d3); j++ {
 			fmt.Printf("____ %s | %s |%s \r\n", d3[j].startData.Time.Format("15:04:05"),
-			d3[j].stopData.Time.Format("15:04:05"),
-			d3[j].Operaton)
+				d3[j].stopData.Time.Format("15:04:05"),
+				d3[j].Operaton)
+			sres = fmt.Sprintf("____ %s | %s |%s ", d3[j].startData.Time.Format("15:04:05"),
+				d3[j].stopData.Time.Format("15:04:05"),
+				d3[j].Operaton)
+			fmt.Println("   n=", strconv.Itoa(int(n)))
+			fmt.Println(" str=", sres)
+			fmt.Println("r=", resLines[n])
+			if !(sres == resLines[n]) {
+				t.Errorf("string not equale result1 ")
+
+			}
+			n = n + 1
 		}
 	}
 }
@@ -143,7 +178,7 @@ func TestSimpleDtm(t *testing.T) {
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
-	data:=tm.GetOperationList()
+	data := tm.GetOperationList()
 	fmt.Println("count operation ", len(data))
 	fmt.Println("Start printing OperationList")
 

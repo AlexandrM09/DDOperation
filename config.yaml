@@ -1,4 +1,4 @@
-﻿---
+﻿
 # поднимать,подъем из скважины - pull out of hole (POOH) 
 #спускать в скважину, спуск - run in hole (RIH),lowering 
 #спуско-подъемные операции - round trips, runs (in hole)
@@ -10,6 +10,7 @@
 Pmin: 10
 Flowmin: 15
 PresFlowCheck: 0
+Rotationmin: 7
 DephtTool: 0.01
 RotorSl: 1
 DirectionalCheck: 0
@@ -23,38 +24,39 @@ Wbitmax: 13
 Pressmax: 257
 TimeIntervalAll: 120
 TimeIntervalMkTrip: 400
+TimeIntervalKNBK: 14400
 MinLenforTrip: 30
-ScapeParam:
-- name: '"Глубина забоя"'
-  gid: 101
-  delta: 1
-- name: '"Положение долота"'
-  gid: 115
-  delta: 1
-- name: '"Давление на манифольде"'
-  gid: 300
-  delta: 2
-- name: '"Расход на входе"'
-  gid: 1001
-  delta: 1
-- name: '"Нагрузка на долото"'
-  gid: 202
-  delta: 1
-- name: '"Вес на крюке"'
-  gid: 200
-  delta: 2
-- name: '"Крутящий момент на роторе"'
-  gid: 1300
-  delta: 0.2
-- name: '"Число оборотов ротора в мин."'
-  gid: 1200
-  delta: 9
-- name: '"Число свечей"'
-  gid: 111
-  delta: 0.1
-- name: '"Положение долота по свечам"'
-  gid: 110
-  delta: 0.1
+Scapeparam:
+- Name: Глубина забоя
+  Gid: 101
+  Delta: 1
+- Name: Положение долота
+  Gid: 115
+  Delta: 1
+- Name: Давление на манифольде
+  Gid: 300
+  Delta: 2
+- Name: Расход на входе
+  Gid: 1001
+  Delta: 1
+- Name: Нагрузка на долото
+  Gid: 202
+  Delta: 1
+- Name: Вес на крюке
+  Gid: 200
+  Delta: 2
+- Name: Крутящий момент на роторе
+  Gid: 1300
+  Delta: 0.2
+- Name: Число оборотов ротора в мин.
+  Gid: 1200
+  Delta: 9
+- Name: Число свечей
+  Gid: 111
+  Delta: 0.1
+- Name: Положение долота по свечам
+  Gid: 110
+  Delta: 0.1
 Operationtype:
 - Бурение
 - Наращивание
@@ -66,7 +68,7 @@ Operationtype:
 - Бурение (ротор)
 - Бурение (слайд)
 - ПЗР
-- ''
+- КНБК
 - ''
 - ''
 - ''
