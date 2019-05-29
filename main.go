@@ -26,8 +26,9 @@ func main() {
 		Cfg: &Cfg,
 	}
 
-	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{FilePath: "./source/source2.zip"})
-	_ = tm.Start(40)
+	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{FilePath: "./source/source2.zip",
+	  SatartTime:"___2019-05-25 17:52:43"})
+	_ = tm.Start(60)
 	err := tm.Wait()
 	if err != nil {
 		log.Fatal("error:time limit exceeded")

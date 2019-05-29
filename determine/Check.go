@@ -2,7 +2,9 @@ package determine
 
 import (
 	//	_ "fmt"
+	_ "fmt"
 	_ "math"
+	"strconv"
 	"time"
 )
 
@@ -81,8 +83,9 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 	}
 	if d.ActiveOperation == 1 {
 		duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
-		//	fmt.Printf("duratOp=%v, start %v \n",duratOp,d.StartActiveOperation)
+			//fmt.Printf("start %v ,max %v duratOp=%v \n",d.startActiveOperation,strconv.Itoa(int(d.Cfg.TimeIntervalMaxMkconn)) ,duratOp)
 		if duratOp < d.Cfg.TimeIntervalMaxMkconn {
+			//fmt.Println("res=1")
 			return 1, false
 		}
 		return 9, false
@@ -100,7 +103,9 @@ func (o *Check0) Check(d *DrillDataType) (int, bool) {
 
 // local circulation test condition
 func checkOne2(d *DrillDataType) int {
-	if detCirculation(d) {return 2}	
+	if detCirculation(d) {
+		return 2
+	}
 	return -1
 
 }
@@ -113,9 +118,10 @@ func (o *Check2) Check(d *DrillDataType) (int, bool) {
 	if resplus > -1 {
 		return resplus, false
 	}
-	if (res>-1)&&(detRotation(d)) {
+	if (res == 2) && (detRotation(d)) {
 		return 3, false
 	}
+	l.Printf("Flow out res=%v,time=%s \n", res, d.ScapeData.Time.Format("15:04:05"))
 	return res, false
 
 }
@@ -129,7 +135,7 @@ func (o *Check3) Check(d *DrillDataType) (int, bool) {
 	if resplus > -1 {
 		return resplus, false
 	}
-	if detRotation(d) {
+	if (res == 2) && detRotation(d) {
 		return 3, false
 	}
 	return res, false
@@ -137,20 +143,27 @@ func (o *Check3) Check(d *DrillDataType) (int, bool) {
 
 //Check -  making a trip (Up)
 func (o *Check4) Check(d *DrillDataType) (int, bool) {
-	if detCirculation(d) {
+	if (detCirculation(d)) || (d.ActiveOperation != 4) {
 		return -1, false // is not making a trip
 	}
 	deltaDepht := d.temp.LastTripData.Values[3] - d.ScapeData.Values[3]
+	l.Printf("Up time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+	l.Printf("Up deltaDepht=%v \n", deltaDepht)
 	if deltaDepht < 0.005 {
 		duratOp := int(d.ScapeData.Time.Sub(d.temp.LastTripData.Time).Seconds())
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to send LastTripData
 			d.temp.FlagChangeTrip = 1
+			l.Printf("d.temp.FlagChangeTrip = 1 Up time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+			l.Printf("Up after duratOp,deltaDepht=%v,duratOp=%v \n", deltaDepht, strconv.Itoa((duratOp)))
+
 			return 9, false
 		}
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to send LastTripData
 			d.temp.FlagChangeTrip = 1
+			l.Printf("Up time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+			l.Printf("revers d.temp.FlagChangeTrip = 1 Up res=4 deltaDepht=%v \n", deltaDepht)
 			return 5, false
 		}
 		return 4, false
@@ -166,19 +179,26 @@ func (o *Check4) Check(d *DrillDataType) (int, bool) {
 
 //Check -  making a trip (Down)
 func (o *Check5) Check(d *DrillDataType) (int, bool) {
-	if detCirculation(d) {
+	if (detCirculation(d)) || (d.ActiveOperation != 5) {
 		return -1, false
 	} // is not making a trip
 	deltaDepht := d.ScapeData.Values[3] - d.temp.LastTripData.Values[3]
+	l.Printf("Down time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+	l.Printf("Down deltaDepht=%v \n", deltaDepht)
 	if deltaDepht < 0.005 {
 		duratOp := int(d.ScapeData.Time.Sub(d.temp.LastTripData.Time).Seconds())
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to pass LastTripData
 			d.temp.FlagChangeTrip = 1
+			l.Printf("d.temp.FlagChangeTrip = 1 down time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+			l.Printf("Down after duratOp,deltaDepht=%v,duratOp=%v \n", deltaDepht, strconv.Itoa((duratOp)))
+
 			return 9, false
 		}
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to pass LastTripData
+			l.Printf("Down time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+			l.Printf("revers d.temp.FlagChangeTrip = 1 Down res=4 deltaDepht=%v \n", deltaDepht)
 			d.temp.FlagChangeTrip = 1
 			return 4, false
 		}
@@ -189,7 +209,8 @@ func (o *Check5) Check(d *DrillDataType) (int, bool) {
 		d.temp.LastTripData = d.ScapeData
 		return 5, false
 	}
-
+	l.Printf("Down out time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+	l.Printf("Down res=%v \n", -1)
 	return -1, false
 }
 
@@ -206,12 +227,19 @@ func (o *Check8) Check(d *DrillDataType) (int, bool) {
 //Check - temp operation test condition
 func (o *Check9) Check(d *DrillDataType) (int, bool) {
 	res := checkOne9(d)
+	l.Printf("Temp in time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+	l.Printf("Temp res=%v \n", res)
+
 	if res != 9 {
 		return res, false
 	}
+
 	if d.ActiveOperation == 9 {
+		l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+		l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
 		if d.ScapeData.Values[10] == 0 {
 			if d.ScapeData.Values[3] < 0.2 {
+
 				return 9, false
 			} //пзр
 			if getLastOp(d) != d.Cfg.Operationtype[10] {
@@ -219,15 +247,24 @@ func (o *Check9) Check(d *DrillDataType) (int, bool) {
 			} //KNBK
 		}
 		//SPO
+		l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+		l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
 		if d.ScapeData.Values[10] < d.temp.LastStartData.Values[10] {
 			d.temp.LastTripData = d.ScapeData
-			return 4, true
+			l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
+			l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
+			return 4, false
 		}
 		if d.ScapeData.Values[10] > d.temp.LastStartData.Values[10] {
+			l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
+			l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
 			d.temp.LastTripData = d.ScapeData
-			return 5, true
+			return 5, false
 		}
 
+	}
+	if d.ActiveOperation != 9 {
+		d.temp.LastStartData = d.ScapeData
 	}
 	return 9, false
 }
@@ -251,7 +288,7 @@ func (o *Check10) Check(d *DrillDataType) (int, bool) {
 	} //пзр
 	if d.ScapeData.Values[10] > 0 {
 		d.temp.LastTripData = d.ScapeData
-		return 5, true
+		return 5, false
 	}
 	duratOp := int(d.ScapeData.Time.Sub(d.temp.LastStartData.Time).Seconds())
 	if d.ActiveOperation == 10 && duratOp > d.Cfg.TimeIntervalKNBK {

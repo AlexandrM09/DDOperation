@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 )
+
 //SteamRND test steam
 type SteamRND struct{}
 
@@ -21,7 +22,10 @@ func (St *SteamRND) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 
 //SteamCsv Steam for csv example files
 type SteamCsv struct {
-	FilePath string
+	FilePath   string
+	SatartTime string
+	tm         time.Time
+	bTime      bool
 }
 
 func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
@@ -32,6 +36,10 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	}()
 	//nothing
 	//v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	var err error
+	St.tm, err = time.Parse("2006-01-02 15:04:05", St.SatartTime)
+	St.bTime = err == nil
+	fmt.Printf("parse time=%v \n", St.bTime)
 	var ScapeData ScapeDataD
 	sH := scapeHeader{}
 
@@ -56,7 +64,9 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	n := 0
 	//fmt.Printf("start for \n")
 	for {
-		if (n==0)||(n%1000==0){fmt.Printf("record number= %v \n", n)}
+		if (n == 0) || (n%1000 == 0) {
+			fmt.Printf("record number= %v \n", n)
+		}
 		line, error := reader.Read()
 		if error == io.EOF { //|| (n > 5)
 			//close(ScapeDataCh)
@@ -104,7 +114,13 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 				}
 			}
 		}
-		ScapeDataCh <- ScapeData
+		if St.bTime {
+			if ScapeData.Time.Sub(St.tm) >0  {
+				ScapeDataCh <- ScapeData
+			}
+		} else {
+			ScapeDataCh <- ScapeData
+		}
 		n++
 
 	}

@@ -8,8 +8,8 @@
 #инструмент - tool(s),(буровой) drill string 
 #промывка - circulation
 Pmin: 10
-Flowmin: 15
-PresFlowCheck: 0
+Flowmin: 4
+PresFlowCheck: 1
 Rotationmin: 7
 DephtTool: 0.01
 RotorSl: 1
@@ -25,6 +25,7 @@ Pressmax: 257
 TimeIntervalAll: 120
 TimeIntervalMkTrip: 400
 TimeIntervalKNBK: 14400
+TimeIntervalMaxMkconn: 1200
 MinLenforTrip: 30
 Scapeparam:
 - Name: Глубина забоя
