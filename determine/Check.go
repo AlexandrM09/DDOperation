@@ -88,7 +88,7 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 			//fmt.Println("res=1")
 			return 1, false
 		}
-		return 9, false
+		return 9, true
 	}
 	return -1, false
 
@@ -238,6 +238,8 @@ func (o *Check9) Check(d *DrillDataType) (int, bool) {
 		l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
 		l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
 		if d.ScapeData.Values[10] == 0 {
+l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
+		l.Printf("Cand=0 Tool=%v \n", d.temp.LastStartData.Values[3])
 			if d.ScapeData.Values[3] < 0.2 {
 
 				return 9, false
@@ -249,16 +251,23 @@ func (o *Check9) Check(d *DrillDataType) (int, bool) {
 		//SPO
 		l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
 		l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
+		nz := d.ScapeData.Values[2] - d.ScapeData.Values[3]
 		if d.ScapeData.Values[10] < d.temp.LastStartData.Values[10] {
+			if nz<13{return 1,true}
 			d.temp.LastTripData = d.ScapeData
 			l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
 			l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
+			duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
+			if duratOp < d.Cfg.TimeIntervalAll {return 4,true}
 			return 4, false
 		}
 		if d.ScapeData.Values[10] > d.temp.LastStartData.Values[10] {
+			if nz<13{return 1,true}
+			duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
 			l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
 			l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
 			d.temp.LastTripData = d.ScapeData
+			if duratOp < d.Cfg.TimeIntervalAll {return 5,true}
 			return 5, false
 		}
 

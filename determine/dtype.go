@@ -3,21 +3,22 @@ package determine
 import (
 	"sync"
 	"time"
-	_"gopkg.in/yaml.v2"
+
 	"github.com/sirupsen/logrus"
+	_ "gopkg.in/yaml.v2"
 )
 
 type (
 	//SummarysheetT -type result list
-	SummarysheetT struct{
-		Sheet OperationOne
+	SummarysheetT struct {
+		Sheet   OperationOne
 		Details []OperationOne
 	}
 	//DrillDataType drill basic data struct
 	DrillDataType struct {
-		operationList   []OperationOne
-		summarysheet    []SummarysheetT
-		
+		operationList []OperationOne
+		summarysheet  []SummarysheetT
+
 		steamCh         chan OperationOne
 		ScapeDataCh     chan ScapeDataD
 		ErrCh           chan error
@@ -76,10 +77,11 @@ type (
 	}
 	//OperationOne description of one operation
 	OperationOne struct {
-		status string
-		StartData, StopData, maxData, minData, sum, agv ScapeDataD
+		status                                          string
+		StartData, StopData, maxData, minData, Agv ScapeDataD
 		//buf_count,count int;
 		//buf:array [0..bufSize] of ageooscape_data;
+		count    int
 		Operaton string
 		Params   string
 	}
@@ -102,6 +104,7 @@ type ScapeParamtype struct {
 	Gid   int     `yaml:"Gid"`
 	Delta float32 `yaml:"Delta"`
 }
+
 //ConfigDt - configuration structure yaml type
 type ConfigDt struct {
 	Pmin                     float32          `yaml:"Pmin"`

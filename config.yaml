@@ -9,7 +9,7 @@
 #промывка - circulation
 Pmin: 10
 Flowmin: 4
-PresFlowCheck: 1
+PresFlowCheck: 0
 Rotationmin: 7
 DephtTool: 0.01
 RotorSl: 1

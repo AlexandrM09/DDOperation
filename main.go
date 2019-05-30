@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	//"io/ioutil"
-	//"time"
+	"time"
 	//"encoding/json"
 	//"log"
 	"log"
@@ -49,7 +49,16 @@ func main() {
 
 		}
 	}
-
+	fmt.Printf("Start print Summarysheet short form len=%v \n", len(data2))
+	fmt.Println(data2[0].Sheet.StartData.Time.Format("2006-01-02"))
+	tempt, _ := time.Parse("15:04:01", "00:00:00")
+	
+	for i := 0; i < len(data2); i++ {
+		dur:=data2[i].Sheet.StopData.Time.Sub(data2[i].Sheet.StartData.Time)
+		fmt.Printf("%s | %s |%s |%s %s \r\n", data2[i].Sheet.StartData.Time.Format("15:04"),
+			data2[i].Sheet.StopData.Time.Format("15:04"),tempt.Add(dur).Format("15:04"),
+			data2[i].Sheet.Operaton,data2[i].Sheet.Params)//,data2[i].Sheet.Agv.Values)
+	}
 }
 func createLog() *logrus.Logger {
 	var log = logrus.New()

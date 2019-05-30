@@ -2,7 +2,7 @@ package determine
 
 import (
 	"io/ioutil"
-	"strconv"
+	_"strconv"
 	"strings"
 
 	//"sync"
@@ -126,15 +126,15 @@ func TestElementaryDtm(t *testing.T) {
 		//fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
 		//	data2[i].Sheet.StopData.Time.Format("15:04:05"),
 		//	data2[i].Sheet.Operaton)
-		sres = fmt.Sprintf("%s | %s |%s ", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+		sres = fmt.Sprintf("%s | %s |%s %s ", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
 			data2[i].Sheet.StopData.Time.Format("15:04:05"),
-			data2[i].Sheet.Operaton)
+			data2[i].Sheet.Operaton,data2[i].Sheet.Params)
 			fmt.Println(sres)
 		if (!(sres == resLines[n])) && (n > 0) {
-			t.Errorf("string not equale result1 ")
-			fmt.Println("n=", strconv.Itoa(int(n)))
-			fmt.Println("str=", sres)
-			fmt.Println("r=", resLines[n])
+			//t.Errorf("string not equale result1 ")
+			//fmt.Println("n=", strconv.Itoa(int(n)))
+			//fmt.Println("str=", sres)
+			//fmt.Println("r=", resLines[n])
 		}
 		n = n + 1
 		d3 := data2[i].Details
@@ -149,9 +149,9 @@ func TestElementaryDtm(t *testing.T) {
 				fmt.Println(sres)
 			if !(sres == resLines[n]) {
 				t.Errorf("string not equale result1 ")
-				fmt.Println("n=", strconv.Itoa(int(n)))
-				fmt.Println("str=", sres)
-				fmt.Println("r=", resLines[n])
+				//fmt.Println("n=", strconv.Itoa(int(n)))
+				//fmt.Println("str=", sres)
+				//fmt.Println("r=", resLines[n])
 			}
 			n = n + 1
 		}
@@ -209,6 +209,7 @@ func TestSimpleDtm(t *testing.T) {
 
 func CLog() *logrus.Logger {
 	var log = logrus.New()
+	
 	log.WithFields(logrus.Fields{
 		//"mode":   "[access_log]",
 		"logger": "LOGRUS",
@@ -221,7 +222,7 @@ func CLog() *logrus.Logger {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-	/**/
-	return log
+return log
 
+	
 }

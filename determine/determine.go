@@ -8,7 +8,7 @@ package determine
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	 "fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -16,7 +16,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	_ "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -62,7 +62,7 @@ func (dt *Determine) Wait() error {
 		dt.wg.Wait()
 		//	fmt.Println("!!!!!!ch <- struct{}{}")
 		ch <- struct{}{}
-		fmt.Println("!!!!!!after wg.Wait()")
+		//fmt.Println("!!!!!!after wg.Wait()")
 	}(ch)
 	for {
 		select {
@@ -85,16 +85,10 @@ func (dt *Determine) Start(wt int) error {
 	dt.wg = &sync.WaitGroup{}
 	dt.wg.Add(1)
 	//var err error
-	dt.Data.Log.WithFields(logrus.Fields{
-		"logger": "LOGRUS",
-		//"Time" : time.Now().Format("dd.mm.yy hh:mm"),
-	}).Info("Start determine")
+	l.Println("Start determine")
 	dt.Data.mu = &sync.RWMutex{}
 	go dt.Run()
-	dt.Data.Log.WithFields(logrus.Fields{
-		"logger": "LOGRUS",
-		//"Time" : time.Now().Format("dd.mm.yy hh:mm"),
-	}).Info("Start Steam")
+	l.Println("Start Steam")
 	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh)
 	go dt.Summarysheet()
 	return nil
@@ -206,10 +200,8 @@ func (dt *Determine) Run() {
 	dt.Data.ActiveOperation = -1
 	defer func() {
 
-		dt.Data.Log.WithFields(logrus.Fields{
-			"logger": "LOGRUS",
-		}).Info("Done")
-		fmt.Println("Close ScapeDataCh")
+		l.Println("Done")
+		//fmt.Println("Close ScapeDataCh")
 		close(dt.Data.ScapeDataCh)
 		close(dt.Data.steamCh)
 		close(dt.Data.ErrCh)
@@ -223,10 +215,10 @@ func (dt *Determine) Run() {
 		select {
 		case <-d.DoneCh:
 			{ //close all
-				fmt.Println("<-d.DoneCh dt.saveoperation() ")
+				//	fmt.Println("<-d.DoneCh dt.saveoperation() ")
 				dt.saveoperation()
-				fmt.Println("dt.Data.DoneSummary <- struct{}{} ")
-				l.Println("dt.Data.DoneSummary <- struct{}{}")
+				//	fmt.Println("dt.Data.DoneSummary <- struct{}{} ")
+				//	l.Println("dt.Data.DoneSummary <- struct{}{}")
 				dt.Data.DoneSummary <- struct{}{}
 
 				return
@@ -262,12 +254,14 @@ func (dt *Determine) Run() {
 				switch {
 				case res == d.ActiveOperation:
 					{ //addDatatooperation
-						dt.addDatatooperation()
+						dt.addDatatooperation(0)
 					}
 				default:
 					{
 						if !changeOp {
+							dt.addDatatooperation(1)
 							dt.saveoperation()
+							
 						}
 						//		fmt.Println("startnewoperation()")
 						l.Printf("d.ActiveOperation = res=%v", res)
@@ -275,6 +269,7 @@ func (dt *Determine) Run() {
 						//if d.ActiveOperation >= 0 {
 						if !changeOp {
 							dt.startnewoperation()
+							dt.addDatatooperation(0)
 						}
 
 						//}
@@ -295,8 +290,27 @@ func (dt *Determine) Run() {
 	//	fmt.Println("Ooo")
 }
 
-func (dt *Determine) addDatatooperation() {
+func (dt *Determine) addDatatooperation(flag int) {
 	//dt.Data.mu.Lock()
+	len := len(dt.Data.operationList)
+	if len==0 {return}
+	Op := &dt.Data.operationList[len-1]
+	data := &dt.Data.ScapeData
+	Op.count++
+	for i := 4; i < 12; i++ {
+		if data.Values[i] < Op.minData.Values[i] {
+			Op.minData.Values[i] = data.Values[i]
+		}
+		if data.Values[i] > Op.maxData.Values[i] {
+			Op.maxData.Values[i] = data.Values[i]
+		}
+		Op.Agv.Values[i] = Op.Agv.Values[i]+data.Values[i]
+		if flag == 1 {
+			Op.Agv.Values[i] = Op.Agv.Values[i] / float32(Op.count)
+		}
+		
+	}
+
 	//defer dt.Data.mu.Unlock()
 }
 
@@ -321,10 +335,11 @@ func (dt *Determine) startnewoperation() {
 	dt.Data.temp.LastStartData = tempData
 	dt.Data.startActiveOperation = tempData.Time
 	dt.Data.steamCh <- dt.Data.operationList[len(dt.Data.operationList)-1]
-	dt.Data.Log.WithFields(logrus.Fields{
+	/*dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Start operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation])
+	*/
 	l.Printf("time=%s \n", dt.Data.ScapeData.Time.Format("15:04:05"))
 	l.Printf("Start operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation] + "  ActiveOperation=" + strconv.Itoa(dt.Data.ActiveOperation))
 
@@ -345,11 +360,13 @@ func (dt *Determine) saveoperation() {
 		dt.Data.operationList[len-1].StopData = dt.Data.LastScapeData
 	}
 	dt.Data.operationList[len-1].status = "save"
+	
 	dt.Data.steamCh <- dt.Data.operationList[len-1]
-	dt.Data.Log.WithFields(logrus.Fields{
+	/*dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Stop and save  operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation])
+	*/
 	l.Printf("Temp time=%s \n", dt.Data.operationList[len-1].StopData.Time.Format("15:04:05"))
 	l.Printf("Stop and save  operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation] +
 		"  ActiveOperation=" + strconv.Itoa(dt.Data.ActiveOperation))
@@ -360,6 +377,19 @@ func (dt *Determine) addSummaryStr(p *SummarysheetT) {
 		//ss.Details=append(ss.Details,)
 		rs := SummarysheetT{Sheet: p.Sheet}
 		rs.Details = p.Details[0:len(p.Details)]
+		data:=rs.Sheet
+		switch data.Operaton{
+			case "Бурение","Бурение ротор","Бурение (слайд)":rs.Sheet.Params=
+			fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с,W=%.1fт) ",
+				data.StartData.Values[3],data.StopData.Values[3],
+				data.Agv.Values[4],data.Agv.Values[5],data.Agv.Values[6])
+			case "Наращивание":rs.Sheet.Params=	fmt.Sprintf(" %.1fсв.",data.StopData.Values[10])	
+		    case "Промывка","Проработка":rs.Sheet.Params=
+			fmt.Sprintf(" в инт. %.1f - %.1f м(Р=%.1fатм,Q=%.1fл/с) ",
+				data.StartData.Values[3],data.StopData.Values[3],data.Agv.Values[4],data.Agv.Values[5])
+			case "Подъем","Спуск":rs.Sheet.Params=
+		  		fmt.Sprintf(" в инт. %.1f - %.1fм ",	data.StartData.Values[3],data.StopData.Values[3])	
+		}
 		//fmt.Println("Save item Summarysheet ",rs.Details)
 		dt.Data.summarysheet = append(dt.Data.summarysheet, rs)
 	}
