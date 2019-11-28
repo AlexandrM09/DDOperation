@@ -256,7 +256,7 @@ l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
 			if nz<13{return 1,true}
 			d.temp.LastTripData = d.ScapeData
 			l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
-			l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
+			l.Printf("Temp start cand(<)=%v \n", d.temp.LastStartData.Values[10])
 			duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
 			if duratOp < d.Cfg.TimeIntervalAll {return 4,true}
 			return 4, false
@@ -265,7 +265,7 @@ l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
 			if nz<13{return 1,true}
 			duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
 			l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
-			l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
+			l.Printf("Temp start cand(>)=%v \n", d.temp.LastStartData.Values[10])
 			d.temp.LastTripData = d.ScapeData
 			if duratOp < d.Cfg.TimeIntervalAll {return 5,true}
 			return 5, false

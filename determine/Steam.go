@@ -30,25 +30,22 @@ type SteamCsv struct {
 
 func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	defer func() {
-		//fmt.Printf("DoneCh <- struct \n")
+		
 		DoneCh <- struct{}{}
 
 	}()
-	//nothing
-	//v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	
 	var err error
 	St.tm, err = time.Parse("2006-01-02 15:04:05", St.SatartTime)
 	St.bTime = err == nil
 	fmt.Printf("parse time=%v \n", St.bTime)
 	var ScapeData ScapeDataD
 	sH := scapeHeader{}
-
 	r, err := zip.OpenReader(St.FilePath) //"../source/source.zip"
 	if err != nil {
 		log.Fatal("unpacking zip file", err)
 	}
 	defer r.Close()
-
 	csvFile := r.File[0]
 	//fmt.Printf("open csv \n")
 	//csvFile, errf := os.Open("../source/03261652_small.csv")
@@ -58,7 +55,6 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 		log.Fatal("not open, ", errf)
 	}
 	fmt.Printf("create new reader \n")
-	//reader := csv.NewReader(bufio.NewReader(csvFile))
 	reader := csv.NewReader(rc)
 	reader.Comma = ';'
 	n := 0
@@ -191,15 +187,10 @@ func getTime(record []string) (time.Time, error) {
 
 	h := n / (1000 * 3600)
 	n = n - h*(1000*3600)
-	//fmt.Printf("type %T value %d \n",h,h)
 	min := n / (1000 * 60)
 	n = n - min*(1000*60)
-	//fmt.Printf("type %T value %d \n",min,min)
 	sec := n / 1000
 	n = n - sec*1000
-	//fmt.Printf("type %T value %d \n",sec,sec)
-	//nsec := n
-	//fmt.Printf("type %T value %d \n",msec,msec)
-	//hour:=
+	
 	return time.Date(year, month, day, h, min, sec, n, time.UTC), nil
 }

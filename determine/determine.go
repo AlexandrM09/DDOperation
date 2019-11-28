@@ -8,7 +8,7 @@ package determine
 import (
 	"encoding/json"
 	"errors"
-	 "fmt"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -115,6 +115,7 @@ func (dt *Determine) Summarysheet() {
 			}
 		case resStr = <-dt.Data.steamCh:
 			{
+
 				if dt.itemNew.firstflag == 0 {
 					if resStr.status == "start" {
 						//dt.itemNew.flag=1
@@ -146,9 +147,14 @@ func (dt *Determine) Summarysheet() {
 							dt.itemNew.nextTime.flag = 1
 							dt.itemNew.nextTime.start = resStr.StartData.Time
 						}
-						if resStr.Operaton == dt.itemNew.resSheet.Sheet.Operaton {
+						l.Println("dt.itemNew.nextTime.flag = 0 resStr=", resStr.Operaton, " dt.Operaton=", dt.itemNew.resSheet.Sheet.Operaton)
+						f1 := resStr.Operaton == dt.itemNew.resSheet.Sheet.Operaton
+						f2 := ((resStr.Operaton == dt.Data.Cfg.Operationtype[9]) && (dt.itemNew.resSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[4]) || (dt.itemNew.resSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[5]))
+						if (f1) || (f2) {
+
 							dt.itemNew.nextTime.flag = 0
 						}
+						l.Println("dt.itemNew.nextTime.flag=", dt.itemNew.nextTime.flag)
 					}
 					if resStr.status == "save" {
 						dt.itemNew.sumItemDr = 0
@@ -159,7 +165,6 @@ func (dt *Determine) Summarysheet() {
 						l.Println("fistflag == 1, resStr.status == save, dur= ", strconv.Itoa(dt.itemNew.sumItemDr))
 						l.Println("TimeInterval for save=", strconv.Itoa(dt.Data.Cfg.TimeIntervalAll))
 						l.Println("newData=", resStr.Operaton, " resSheet=", dt.itemNew.resSheet.Sheet.Operaton)
-
 						if dt.itemNew.sumItemDr < dt.Data.Cfg.TimeIntervalAll {
 							dt.itemNew.resSheet.Details = append(dt.itemNew.resSheet.Details, resStr)
 							len := len(dt.itemNew.resSheet.Details)
@@ -251,6 +256,7 @@ func (dt *Determine) Run() {
 				}
 				//	fmt.Println("res= ", fmt.Sprint(res))
 				//	fmt.Println("ActiveOperation ", fmt.Sprint(d.ActiveOperation))
+
 				switch {
 				case res == d.ActiveOperation:
 					{ //addDatatooperation
@@ -258,14 +264,18 @@ func (dt *Determine) Run() {
 					}
 				default:
 					{
+
 						if !changeOp {
 							dt.addDatatooperation(1)
 							dt.saveoperation()
-							
+
 						}
 						//		fmt.Println("startnewoperation()")
 						l.Printf("d.ActiveOperation = res=%v", res)
 						d.ActiveOperation = res
+						if changeOp {
+							dt.addDatatooperation(0)
+						}
 						//if d.ActiveOperation >= 0 {
 						if !changeOp {
 							dt.startnewoperation()
@@ -293,7 +303,14 @@ func (dt *Determine) Run() {
 func (dt *Determine) addDatatooperation(flag int) {
 	//dt.Data.mu.Lock()
 	len := len(dt.Data.operationList)
-	if len==0 {return}
+	if len == 0 {
+		return
+	}
+	if !(dt.Data.operationList[len-1].Operaton == dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation]) {
+		dt.Data.operationList[len-1].Lastchangeoperation = dt.Data.operationList[len-1].Operaton
+		dt.Data.operationList[len-1].Operaton = dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation]
+	}
+
 	Op := &dt.Data.operationList[len-1]
 	data := &dt.Data.ScapeData
 	Op.count++
@@ -304,11 +321,11 @@ func (dt *Determine) addDatatooperation(flag int) {
 		if data.Values[i] > Op.maxData.Values[i] {
 			Op.maxData.Values[i] = data.Values[i]
 		}
-		Op.Agv.Values[i] = Op.Agv.Values[i]+data.Values[i]
+		Op.Agv.Values[i] = Op.Agv.Values[i] + data.Values[i]
 		if flag == 1 {
 			Op.Agv.Values[i] = Op.Agv.Values[i] / float32(Op.count)
 		}
-		
+
 	}
 
 	//defer dt.Data.mu.Unlock()
@@ -360,7 +377,7 @@ func (dt *Determine) saveoperation() {
 		dt.Data.operationList[len-1].StopData = dt.Data.LastScapeData
 	}
 	dt.Data.operationList[len-1].status = "save"
-	
+
 	dt.Data.steamCh <- dt.Data.operationList[len-1]
 	/*dt.Data.Log.WithFields(logrus.Fields{
 		"logger": "LOGRUS",
@@ -377,18 +394,22 @@ func (dt *Determine) addSummaryStr(p *SummarysheetT) {
 		//ss.Details=append(ss.Details,)
 		rs := SummarysheetT{Sheet: p.Sheet}
 		rs.Details = p.Details[0:len(p.Details)]
-		data:=rs.Sheet
-		switch data.Operaton{
-			case "Бурение","Бурение ротор","Бурение (слайд)":rs.Sheet.Params=
-			fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с,W=%.1fт) ",
-				data.StartData.Values[3],data.StopData.Values[3],
-				data.Agv.Values[4],data.Agv.Values[5],data.Agv.Values[6])
-			case "Наращивание":rs.Sheet.Params=	fmt.Sprintf(" %.1fсв.",data.StopData.Values[10])	
-		    case "Промывка","Проработка":rs.Sheet.Params=
-			fmt.Sprintf(" в инт. %.1f - %.1f м(Р=%.1fатм,Q=%.1fл/с) ",
-				data.StartData.Values[3],data.StopData.Values[3],data.Agv.Values[4],data.Agv.Values[5])
-			case "Подъем","Спуск":rs.Sheet.Params=
-		  		fmt.Sprintf(" в инт. %.1f - %.1fм ",	data.StartData.Values[3],data.StopData.Values[3])	
+		data := rs.Sheet
+		switch data.Operaton {
+		case "Бурение", "Бурение ротор", "Бурение (слайд)":
+			rs.Sheet.Params =
+				fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с,W=%.1fт) ",
+					data.StartData.Values[3], data.StopData.Values[3],
+					data.Agv.Values[4], data.Agv.Values[5], data.Agv.Values[6])
+		case "Наращивание":
+			rs.Sheet.Params = fmt.Sprintf(" %.1fсв.", data.StopData.Values[10])
+		case "Промывка", "Проработка":
+			rs.Sheet.Params =
+				fmt.Sprintf(" в инт. %.1f - %.1f м(Р=%.1fатм,Q=%.1fл/с) ",
+					data.StartData.Values[3], data.StopData.Values[3], data.Agv.Values[4], data.Agv.Values[5])
+		case "Подъем", "Спуск":
+			rs.Sheet.Params =
+				fmt.Sprintf(" в инт. %.1f - %.1fм ", data.StartData.Values[3], data.StopData.Values[3])
 		}
 		//fmt.Println("Save item Summarysheet ",rs.Details)
 		dt.Data.summarysheet = append(dt.Data.summarysheet, rs)

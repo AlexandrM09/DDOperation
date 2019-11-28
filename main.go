@@ -27,13 +27,12 @@ func main() {
 	}
 
 	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{FilePath: "./source/source2.zip",
-	  SatartTime:"___2019-05-25 17:52:43"})
+		SatartTime: "___2019-05-25 17:52:43"})
 	_ = tm.Start(60)
 	err := tm.Wait()
 	if err != nil {
 		log.Fatal("error:time limit exceeded")
 	}
-
 
 	data2 := tm.GetSummarysheet()
 	fmt.Printf("Start print Summarysheet len=%v \n", len(data2))
@@ -43,21 +42,22 @@ func main() {
 			data2[i].Sheet.Operaton)
 		d3 := data2[i].Details
 		for j := 0; j < len(d3); j++ {
-			fmt.Printf("____ %s | %s |%s \r\n", d3[j].StartData.Time.Format("15:04:05"),
+			fmt.Printf("____ %s | %s |%s %s\r\n", d3[j].StartData.Time.Format("15:04:05"),
 				d3[j].StopData.Time.Format("15:04:05"),
-				d3[j].Operaton)
+				d3[j].Operaton,
+				d3[j].Params)
 
 		}
 	}
 	fmt.Printf("Start print Summarysheet short form len=%v \n", len(data2))
 	fmt.Println(data2[0].Sheet.StartData.Time.Format("2006-01-02"))
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
-	
+
 	for i := 0; i < len(data2); i++ {
-		dur:=data2[i].Sheet.StopData.Time.Sub(data2[i].Sheet.StartData.Time)
+		dur := data2[i].Sheet.StopData.Time.Sub(data2[i].Sheet.StartData.Time)
 		fmt.Printf("%s | %s |%s |%s %s \r\n", data2[i].Sheet.StartData.Time.Format("15:04"),
-			data2[i].Sheet.StopData.Time.Format("15:04"),tempt.Add(dur).Format("15:04"),
-			data2[i].Sheet.Operaton,data2[i].Sheet.Params)//,data2[i].Sheet.Agv.Values)
+			data2[i].Sheet.StopData.Time.Format("15:04"), tempt.Add(dur).Format("15:04"),
+			data2[i].Sheet.Operaton, data2[i].Sheet.Params) //,data2[i].Sheet.Agv.Values)
 	}
 }
 func createLog() *logrus.Logger {

@@ -77,13 +77,14 @@ type (
 	}
 	//OperationOne description of one operation
 	OperationOne struct {
-		status                                          string
+		status                                     string
 		StartData, StopData, maxData, minData, Agv ScapeDataD
 		//buf_count,count int;
 		//buf:array [0..bufSize] of ageooscape_data;
-		count    int
-		Operaton string
-		Params   string
+		Lastchangeoperation string
+		count               int
+		Operaton            string
+		Params              string
 	}
 )
 
