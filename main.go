@@ -2,17 +2,15 @@ package main
 
 import (
 	"fmt"
-	//"io/ioutil"
-	"time"
-	//"encoding/json"
-	//"log"
 	"log"
 	"os"
+	"path"
+	"runtime"
+	"time"
 
 	dtm "./determine"
-	"github.com/sirupsen/logrus"
+	logrus "github.com/sirupsen/logrus"
 	_ "gopkg.in/yaml.v2"
-	//	"sync"
 )
 
 func main() {
@@ -22,7 +20,7 @@ func main() {
 		log.Fatal("not load config file")
 	}
 	sr := dtm.DrillDataType{
-		Log: createLog(),
+		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
 
@@ -60,13 +58,27 @@ func main() {
 			data2[i].Sheet.Operaton, data2[i].Sheet.Params) //,data2[i].Sheet.Agv.Values)
 	}
 }
-func createLog() *logrus.Logger {
+func createLog(ll logrus.Level) *logrus.Logger {
 	var log = logrus.New()
-	log.WithFields(logrus.Fields{
-		//"mode":   "[access_log]",
-		"logger": "LOGRUS",
-	})
-	log.SetFormatter(&logrus.JSONFormatter{})
+	//	log.WithFields(logrus.Fields{
+	//		//"mode":   "[access_log]",
+	//		"logger": "LOGRUS",
+	//	})
+	//	log.SetFormatter(&logrus.JSONFormatter{})
+	log.SetReportCaller(true)
+
+	log.SetFormatter(&logrus.TextFormatter{
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			_, filename := path.Split(f.File)
+			filename = fmt.Sprintf("%s:%d", filename, f.Line)
+			return "", filename
+		},
+		DisableColors: false,
+		//	FullTimestamp: true,
+	},
+	)
+
+	log.SetLevel(ll)
 	log.Out = os.Stdout
 	file, err := os.OpenFile("logrus.log", os.O_CREATE|os.O_WRONLY, 0666)
 	if err == nil {

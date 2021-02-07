@@ -10,13 +10,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"sync"
 	"time"
 
-	_ "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
@@ -85,10 +84,22 @@ func (dt *Determine) Start(wt int) error {
 	dt.wg = &sync.WaitGroup{}
 	dt.wg.Add(1)
 	//var err error
-	l.Println("Start determine")
+	//l.Println("Start determine")
+	dt.Data.Log.WithFields(logrus.Fields{
+		"package":  "determine",
+		"function": "Start",
+		//	"error":    nil,
+
+	}).Debug(" Start Steam ")
 	dt.Data.mu = &sync.RWMutex{}
 	go dt.Run()
-	l.Println("Start Steam")
+	//l.Println("Start determine")
+	dt.Data.Log.WithFields(logrus.Fields{
+		"package":  "determine",
+		"function": "Start",
+		//	"error":    nil,
+
+	}).Debug(" Start Steam ")
 	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh)
 	go dt.Summarysheet()
 	return nil
@@ -106,7 +117,14 @@ func (dt *Determine) Summarysheet() {
 				//	}
 				len2 := len(dt.itemNew.resSheet.Details)
 				//fmt.Println("save op=", dt.itemNew.resSheet.Sheet.Operaton)
-				l.Println("save op=", dt.itemNew.resSheet.Sheet.Operaton)
+				//l.Println("save op=", dt.itemNew.resSheet.Sheet.Operaton)
+				dt.Data.Log.WithFields(logrus.Fields{
+					"package":  "determine",
+					"function": "Summarysheet",
+					//	"error":    nil,
+					"status":    resStr.status,
+					"firstflag": dt.itemNew.firstflag,
+				}).Debug("done and save operation")
 				//dt.itemNew.nextTime.flag = 0
 				dt.itemNew.resSheet.Sheet.StopData = dt.itemNew.resSheet.Details[len2-1].StopData
 				dt.addSummaryStr(&dt.itemNew.resSheet)
@@ -115,13 +133,35 @@ func (dt *Determine) Summarysheet() {
 			}
 		case resStr = <-dt.Data.steamCh:
 			{
-
+				dt.Data.Log.WithFields(logrus.Fields{
+					"package":  "determine",
+					"function": "Summarysheet",
+					//	"error":    nil,
+					"status":    resStr.status,
+					"firstflag": dt.itemNew.firstflag,
+				}).Debug("case resStr = <-dt.Data.steamCh:")
 				if dt.itemNew.firstflag == 0 {
+					//l.Printf("Summarysheet() Start firstflag == 0 :fistflag =%d, resStr.status =%s", dt.itemNew.firstflag, resStr.status)
+					dt.Data.Log.WithFields(logrus.Fields{
+						"package":  "determine",
+						"function": "Summarysheet",
+						//	"error":    nil,
+						"status":    resStr.status,
+						"firstflag": dt.itemNew.firstflag,
+					}).Debug("if dt.itemNew.firstflag == 0 {")
 					if resStr.status == "start" {
 						//dt.itemNew.flag=1
 						//	fmt.Println("firstflag == 0, resStr.status == start time=",dt.itemNew.startTime)
 						//	fmt.Println("newData=",resStr.Operaton," resSheet epty")
 						dt.itemNew.startTime = resStr.StartData.Time
+						dt.Data.Log.WithFields(logrus.Fields{
+							"package":  "determine",
+							"function": "Summarysheet",
+							//	"error":    nil,
+							"status":    resStr.status,
+							"firstflag": dt.itemNew.firstflag,
+						}).Debug("if resStr.status == start")
+						//l.Printf("Summarysheet():fistflag =%d, resStr.status =%s", dt.itemNew.firstflag, resStr.status)
 						//dt.itemNew.res=resStr
 					}
 					if resStr.status == "save" {
@@ -133,60 +173,127 @@ func (dt *Determine) Summarysheet() {
 						dt.itemNew.resSheet.Sheet = resStr
 						//	dt.itemNew.resSheet.Sheet.StartData.Time = dt.itemNew.startTime
 						dt.itemNew.resSheet.Details[0] = resStr
+						dt.Data.Log.WithFields(logrus.Fields{
+							"package":  "determine",
+							"function": "Summarysheet",
+							//	"error":    nil,
+							"status":    resStr.status,
+							"firstflag": dt.itemNew.firstflag,
+						}).Debug("if resStr.status == save {")
+						//l.Printf("Summarysheet():fistflag =%d, resStr.status =%s", dt.itemNew.firstflag, resStr.status)
 						//	fmt.Println("newData=",resStr.Operaton," resSheet=",dt.itemNew.resSheet.Sheet.Operaton)
 					}
 					continue
 				}
 				if dt.itemNew.firstflag == 1 {
+					//l.Printf("Summarysheet() Start firstflag == 1 :fistflag =%d, resStr.status =%s", dt.itemNew.firstflag, resStr.status)
+					dt.Data.Log.WithFields(logrus.Fields{
+						"package":  "determine",
+						"function": "Summarysheet",
+						//	"error":    nil,
+						"status":    resStr.status,
+						"firstflag": dt.itemNew.firstflag,
+					}).Debug("if dt.itemNew.firstflag == 1 {")
 					if resStr.status == "start" {
-						l.Println("fistflag == 1, resStr.status == start ")
-						l.Println("newData=", resStr.Operaton, " resSheet=", dt.itemNew.resSheet.Sheet.Operaton)
+						//l.Printf("Summarysheet():fistflag =%d, resStr.status =%s", dt.itemNew.firstflag, resStr.status)
+						//l.Println("newData=", resStr.Operaton, " resSheet=", dt.itemNew.resSheet.Sheet.Operaton)
 						len := len(dt.itemNew.resSheet.Details)
-						l.Println("len Details =", len, " last op details=", dt.itemNew.resSheet.Details[len-1].Operaton)
+						//l.Println("len Details =", len, " last op details=", dt.itemNew.resSheet.Details[len-1].Operaton)
+						dt.Data.Log.WithFields(logrus.Fields{
+							"package":  "determine",
+							"function": "Summarysheet",
+							//	"error":    nil,
+							"status":           resStr.status,
+							"firstflag":        dt.itemNew.firstflag,
+							"resSheet=":        dt.itemNew.resSheet.Sheet.Operaton,
+							"len Details":      len,
+							"last op details=": dt.itemNew.resSheet.Details[len-1].Operaton,
+						}).Debug("if resStr.status == start {")
 						if dt.itemNew.nextTime.flag == 0 {
 							dt.itemNew.nextTime.flag = 1
 							dt.itemNew.nextTime.start = resStr.StartData.Time
 						}
-						l.Println("dt.itemNew.nextTime.flag = 0 resStr=", resStr.Operaton, " dt.Operaton=", dt.itemNew.resSheet.Sheet.Operaton)
+						//l.Println("dt.itemNew.nextTime.flag = 0 resStr=", resStr.Operaton, " dt.Operaton=", dt.itemNew.resSheet.Sheet.Operaton)
 						f1 := resStr.Operaton == dt.itemNew.resSheet.Sheet.Operaton
 						f2 := ((resStr.Operaton == dt.Data.Cfg.Operationtype[9]) && (dt.itemNew.resSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[4]) || (dt.itemNew.resSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[5]))
 						if (f1) || (f2) {
 
 							dt.itemNew.nextTime.flag = 0
 						}
-						l.Println("dt.itemNew.nextTime.flag=", dt.itemNew.nextTime.flag)
+						//l.Println("dt.itemNew.nextTime.flag=", dt.itemNew.nextTime.flag)
+						dt.Data.Log.WithFields(logrus.Fields{
+							"package":  "determine",
+							"function": "Summarysheet",
+							//	"error":    nil,
+							"status":                resStr.status,
+							"firstflag":             dt.itemNew.firstflag,
+							"itemNew.nextTime.flag": dt.itemNew.nextTime.flag,
+						}).Debug("if resStr.status == start { exit")
 					}
 					if resStr.status == "save" {
 						dt.itemNew.sumItemDr = 0
 						if dt.itemNew.nextTime.flag == 1 {
 							dt.itemNew.sumItemDr = int(resStr.StopData.Time.Sub(dt.itemNew.nextTime.start).Seconds())
 						}
-						l.Printf("Scape time=%s \n", dt.Data.ScapeData.Time.Format("15:04:05"))
-						l.Println("fistflag == 1, resStr.status == save, dur= ", strconv.Itoa(dt.itemNew.sumItemDr))
-						l.Println("TimeInterval for save=", strconv.Itoa(dt.Data.Cfg.TimeIntervalAll))
-						l.Println("newData=", resStr.Operaton, " resSheet=", dt.itemNew.resSheet.Sheet.Operaton)
+						//l.Printf("Scape time=%s \n", dt.Data.ScapeData.Time.Format("15:04:05"))
+						//l.Printf("Summarysheet():fistflag =%d, resStr.status =%s,dur=%s ", dt.itemNew.firstflag, resStr.status, strconv.Itoa(dt.itemNew.sumItemDr))
+						//l.Println("fistflag == 1, resStr.status == save, dur= ", strconv.Itoa(dt.itemNew.sumItemDr))
+						//l.Println("TimeInterval for save=", strconv.Itoa(dt.Data.Cfg.TimeIntervalAll))
+						//l.Println("newData=", resStr.Operaton, " resSheet=", dt.itemNew.resSheet.Sheet.Operaton)
+
 						if dt.itemNew.sumItemDr < dt.Data.Cfg.TimeIntervalAll {
 							dt.itemNew.resSheet.Details = append(dt.itemNew.resSheet.Details, resStr)
 							len := len(dt.itemNew.resSheet.Details)
-							l.Println("save Details, len Details =", len, " last op details=", dt.itemNew.resSheet.Details[len-1].Operaton)
+							//l.Println("save Details, len Details =", len, " last op details=", dt.itemNew.resSheet.Details[len-1].Operaton)
+							dt.Data.Log.WithFields(logrus.Fields{
+								"package":  "determine",
+								"function": "Summarysheet",
+								//	"error":    nil,
+								"status":                  resStr.status,
+								"firstflag":               dt.itemNew.firstflag,
+								"len Details":             len,
+								" last operation details": dt.itemNew.resSheet.Details[len-1].Operaton,
+							}).Debug("add new Sheet.Details")
 							continue
 						}
 						//append new sheet
 						len2 := len(dt.itemNew.resSheet.Details)
-						l.Println("save op=", dt.itemNew.resSheet.Sheet.Operaton)
+						//l.Println("save op=", dt.itemNew.resSheet.Sheet.Operaton)
 						dt.itemNew.nextTime.flag = 0
 						dt.itemNew.resSheet.Sheet.StopData = dt.itemNew.resSheet.Details[len2-1].StopData
+						dt.Data.Log.WithFields(logrus.Fields{
+							"package":  "determine",
+							"function": "Summarysheet",
+							//	"error":    nil,
+							"status":                 resStr.status,
+							"firstflag":              dt.itemNew.firstflag,
+							"Scape time":             dt.Data.ScapeData.Time.Format("15:04:05"),
+							"dur":                    strconv.Itoa(dt.itemNew.sumItemDr),
+							"TimeInterval for save=": strconv.Itoa(dt.Data.Cfg.TimeIntervalAll),
+							"newData":                resStr.Operaton,
+							"resSheet":               dt.itemNew.resSheet.Sheet.Operaton,
+						}).Debug("Save Sheet.Operaton - addSummaryStr(")
 						dt.addSummaryStr(&dt.itemNew.resSheet)
 						dt.itemNew.resSheet.Sheet = resStr
 						dt.itemNew.resSheet.Details = nil
 						dt.itemNew.resSheet.Details = make([]OperationOne, 1, 10)
 						dt.itemNew.resSheet.Details[0] = resStr
 
-						l.Println("after save time=", dt.itemNew.startTime)
+						//l.Println("after save time=", dt.itemNew.startTime)
 						len3 := len(dt.itemNew.resSheet.Details)
-						l.Println(" resSheet=", dt.itemNew.resSheet.Sheet.Operaton)
-						l.Println("first Details, len Details =", len3, " last op details=", dt.itemNew.resSheet.Details[len3-1].Operaton)
-
+						//l.Println(" resSheet=", dt.itemNew.resSheet.Sheet.Operaton)
+						//l.Println("first Details, len Details =", len3, " last op details=", dt.itemNew.resSheet.Details[len3-1].Operaton)
+						dt.Data.Log.WithFields(logrus.Fields{
+							"package":  "determine",
+							"function": "Summarysheet",
+							//	"error":    nil,
+							"status":                  resStr.status,
+							"firstflag":               dt.itemNew.firstflag,
+							"new start time:":         dt.itemNew.startTime,
+							"resSheet":                dt.itemNew.resSheet.Sheet.Operaton,
+							"len Details":             len3,
+							"last operation details=": dt.itemNew.resSheet.Details[len3-1].Operaton,
+						}).Debug("Start new Sheet.Operaton -before  addSummaryStr(")
 					}
 
 				}
@@ -205,7 +312,13 @@ func (dt *Determine) Run() {
 	dt.Data.ActiveOperation = -1
 	defer func() {
 
-		l.Println("Done")
+		//l.Println("Done")
+		dt.Data.Log.WithFields(logrus.Fields{
+			"package":  "determine",
+			"function": "run",
+			//	"error":    nil,
+
+		}).Debug(" Done (defer)")
 		//fmt.Println("Close ScapeDataCh")
 		close(dt.Data.ScapeDataCh)
 		close(dt.Data.steamCh)
@@ -271,7 +384,14 @@ func (dt *Determine) Run() {
 
 						}
 						//		fmt.Println("startnewoperation()")
-						l.Printf("d.ActiveOperation = res=%v", res)
+						//l.Printf("d.ActiveOperation = res=%v", res)
+						dt.Data.Log.WithFields(logrus.Fields{
+							"package":  "determine",
+							"function": "run",
+							//	"error":    nil,
+							"ActiveOperation": dt.Data.ActiveOperation,
+							"res":             res,
+						}).Debug(" after d.ActiveOperation = res")
 						d.ActiveOperation = res
 						if changeOp {
 							dt.addDatatooperation(0)
@@ -357,9 +477,16 @@ func (dt *Determine) startnewoperation() {
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Start operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation])
 	*/
-	l.Printf("time=%s \n", dt.Data.ScapeData.Time.Format("15:04:05"))
-	l.Printf("Start operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation] + "  ActiveOperation=" + strconv.Itoa(dt.Data.ActiveOperation))
-
+	//l.Printf("time=%s \n", dt.Data.ScapeData.Time.Format("15:04:05"))
+	//l.Printf("Start operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation] + "  ActiveOperation=" + strconv.Itoa(dt.Data.ActiveOperation))
+	dt.Data.Log.WithFields(logrus.Fields{
+		"package":  "determine",
+		"function": "startnewoperation",
+		//	"error":    nil,
+		"time":            dt.Data.ScapeData.Time.Format("15:04:05"),
+		"Operation":       dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation],
+		"ActiveOperation": strconv.Itoa(dt.Data.ActiveOperation),
+	}).Debug("Start operation")
 }
 func (dt *Determine) saveoperation() {
 	//
@@ -372,7 +499,13 @@ func (dt *Determine) saveoperation() {
 	if dt.Data.temp.FlagChangeTrip == 1 {
 		//dt.Data.temp.FlagChangeTrip=0
 		dt.Data.operationList[len-1].StopData = dt.Data.temp.LastTripData
-		l.Printf("FlagChangeTrip == 1")
+		//l.Printf("FlagChangeTrip == 1")
+		dt.Data.Log.WithFields(logrus.Fields{
+			"package":  "determine",
+			"function": "saveoperation",
+			//	"error":    nil,
+			"FlagChangeTrip": dt.Data.temp.FlagChangeTrip,
+		}).Debug("FlagChangeTrip == 1")
 	} else {
 		dt.Data.operationList[len-1].StopData = dt.Data.LastScapeData
 	}
@@ -384,9 +517,17 @@ func (dt *Determine) saveoperation() {
 		"Time":   dt.Data.ScapeData.Time.Format("2006-01-02 15:04:05"),
 	}).Info("Stop and save  operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation])
 	*/
-	l.Printf("Temp time=%s \n", dt.Data.operationList[len-1].StopData.Time.Format("15:04:05"))
-	l.Printf("Stop and save  operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation] +
-		"  ActiveOperation=" + strconv.Itoa(dt.Data.ActiveOperation))
+	//l.Printf("Temp time=%s \n", dt.Data.operationList[len-1].StopData.Time.Format("15:04:05"))
+	//l.Printf("Stop and save  operation " + dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation] +
+	//	"  ActiveOperation=" + strconv.Itoa(dt.Data.ActiveOperation))
+	dt.Data.Log.WithFields(logrus.Fields{
+		"package":  "determine",
+		"function": "saveoperation",
+		//	"error":    nil,
+		"Temp time":       dt.Data.operationList[len-1].StopData.Time.Format("15:04:05"),
+		"Save operation ": dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation],
+		"ActiveOperation": strconv.Itoa(dt.Data.ActiveOperation),
+	}).Debug("Stop and save  operation")
 }
 func (dt *Determine) addSummaryStr(p *SummarysheetT) {
 	if p.Sheet.status == "save" {
@@ -477,8 +618,8 @@ func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 	ds.DoneCh = make(chan struct{})
 	ds.DoneSummary = make(chan struct{})
 	ds.ActiveOperation = 1
-	file, _ := os.OpenFile("temp.log", os.O_CREATE|os.O_WRONLY, 0666)
-	l = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
+	//file, _ := os.OpenFile("temp.log", os.O_CREATE|os.O_WRONLY, 0666)
+	//l = log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
 	return &Determine{Data: ds,
 		Steam: sm,
 		ListCheck: []determineOne{&Check0{}, &Check1{},
@@ -486,4 +627,4 @@ func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 	}
 }
 
-var l *log.Logger
+//var l *log.Logger
