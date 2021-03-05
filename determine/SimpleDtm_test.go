@@ -2,7 +2,7 @@ package determine
 
 import (
 	"io/ioutil"
-	_"strconv"
+	_ "strconv"
 	"strings"
 
 	//"sync"
@@ -104,12 +104,12 @@ func TestElementaryDtm(t *testing.T) {
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
-	data := tm.GetOperationList()
-	for i := 0; i < len(data); i++ {
-		fmt.Fprintf(file, "%s | %s |%s \r\n", data[i].StartData.Time.Format("2006-01-02 15:04:05"),
-			data[i].StopData.Time.Format("15:04:05"),
-			data[i].Operaton)
-	}
+	//data := tm.GetOperationList()
+	//for i := 0; i < len(data); i++ {
+	//	fmt.Fprintf(file, "%s | %s |%s \r\n", data[i].StartData.Time.Format("2006-01-02 15:04:05"),
+	//		data[i].StopData.Time.Format("15:04:05"),
+	//		data[i].Operaton)
+	//}
 	FileRes, err2 := ioutil.ReadFile("./result1.txt")
 	if err2 != nil {
 		t.Errorf("file not find result1.txt ")
@@ -120,16 +120,17 @@ func TestElementaryDtm(t *testing.T) {
 	}
 	sres := ""
 	var n int
+	n = 0
 	data2 := tm.GetSummarysheet()
 	fmt.Printf("Start print Summarysheet len=%v \n", len(data))
 	for i := 0; i < len(data2); i++ {
 		//fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
 		//	data2[i].Sheet.StopData.Time.Format("15:04:05"),
 		//	data2[i].Sheet.Operaton)
-		sres = fmt.Sprintf("%s | %s |%s %s ", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+		sres = fmt.Sprintf("@@@@@%s | %s |%s %s ", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
 			data2[i].Sheet.StopData.Time.Format("15:04:05"),
-			data2[i].Sheet.Operaton,data2[i].Sheet.Params)
-			fmt.Println(sres)
+			data2[i].Sheet.Operaton, data2[i].Sheet.Params)
+		fmt.Println(sres)
 		if (!(sres == resLines[n])) && (n > 0) {
 			//t.Errorf("string not equale result1 ")
 			//fmt.Println("n=", strconv.Itoa(int(n)))
@@ -138,7 +139,7 @@ func TestElementaryDtm(t *testing.T) {
 		}
 		n = n + 1
 		d3 := data2[i].Details
-		//fmt.Printf("len Details =%v \n",len(d3))
+
 		for j := 0; j < len(d3); j++ {
 			//fmt.Printf("____ %s | %s |%s \r\n", d3[j].StartData.Time.Format("15:04:05"),
 			//	d3[j].StopData.Time.Format("15:04:05"),
@@ -146,14 +147,25 @@ func TestElementaryDtm(t *testing.T) {
 			sres = fmt.Sprintf("____ %s | %s |%s ", d3[j].StartData.Time.Format("15:04:05"),
 				d3[j].StopData.Time.Format("15:04:05"),
 				d3[j].Operaton)
-				fmt.Println(sres)
+			fmt.Println(sres)
+			if sres == resLines[n] {
+				fmt.Println("OK")
+			}
+			if !(sres == resLines[n]) {
+				fmt.Println("not OK")
+			}
+
+			n = n + 1
+			continue
 			if !(sres == resLines[n]) {
 				t.Errorf("string not equale result1 ")
+				t.Errorf("programm:%s,i=%d,j=%d,len=%d", sres, i, j, len(sres))
+				t.Errorf(" result1:%s,n=%d,len=%d", resLines[n], n, len(resLines[n]))
 				//fmt.Println("n=", strconv.Itoa(int(n)))
 				//fmt.Println("str=", sres)
 				//fmt.Println("r=", resLines[n])
 			}
-			n = n + 1
+
 		}
 	}
 }
@@ -209,7 +221,7 @@ func TestSimpleDtm(t *testing.T) {
 
 func CLog() *logrus.Logger {
 	var log = logrus.New()
-	
+
 	log.WithFields(logrus.Fields{
 		//"mode":   "[access_log]",
 		"logger": "LOGRUS",
@@ -222,7 +234,6 @@ func CLog() *logrus.Logger {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-return log
+	return log
 
-	
 }

@@ -1,10 +1,5 @@
 package determine
 
-/*func (d *drillData) read() error{
-    return nil
-}
-*/
-
 import (
 	"encoding/json"
 	"errors"
@@ -57,11 +52,9 @@ type (
 func (dt *Determine) Wait() error {
 	ch := make(chan struct{})
 	go func(ch chan struct{}) {
-		//	fmt.Println("!!!!!!before wg.Wait()")
 		dt.wg.Wait()
-		//	fmt.Println("!!!!!!ch <- struct{}{}")
 		ch <- struct{}{}
-		//fmt.Println("!!!!!!after wg.Wait()")
+
 	}(ch)
 	for {
 		select {
@@ -102,7 +95,7 @@ func (dt *Determine) Start(wt int) error {
 	}).Debug(" Start Steam ")
 	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh)
 	go dt.Summarysheet()
-	return nil
+	return dt.Wait() //nil
 }
 
 //Summarysheet - fills in the summary sheet
@@ -546,11 +539,11 @@ func (dt *Determine) addSummaryStr(p *SummarysheetT) {
 			rs.Sheet.Params = fmt.Sprintf(" %.1fсв.", data.StopData.Values[10])
 		case "Промывка", "Проработка":
 			rs.Sheet.Params =
-				fmt.Sprintf(" в инт. %.1f - %.1f м(Р=%.1fатм,Q=%.1fл/с) ",
+				fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с) ",
 					data.StartData.Values[3], data.StopData.Values[3], data.Agv.Values[4], data.Agv.Values[5])
 		case "Подъем", "Спуск":
 			rs.Sheet.Params =
-				fmt.Sprintf(" в инт. %.1f - %.1fм ", data.StartData.Values[3], data.StopData.Values[3])
+				fmt.Sprintf(" в инт.%.1f - %.1fм ", data.StartData.Values[3], data.StopData.Values[3])
 		}
 		//fmt.Println("Save item Summarysheet ",rs.Details)
 		dt.Data.summarysheet = append(dt.Data.summarysheet, rs)
@@ -586,7 +579,6 @@ func LoadConfig(path string, cf *ConfigDt) error {
 	decoder := json.NewDecoder(file)
 	//json.Unmarshal()
 	err = decoder.Decode(&cf)
-	//fmt.Printf("Cfg=%v \n",cf)
 	return nil
 }
 

@@ -24,10 +24,12 @@ func main() {
 		Cfg: &Cfg,
 	}
 
-	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{FilePath: "./source/source2.zip",
-		SatartTime: "___2019-05-25 17:52:43"})
-	_ = tm.Start(60)
-	err := tm.Wait()
+	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{
+		FilePath:   "./source/source1.zip",
+		SatartTime: "___2019-05-25 17:52:43",
+	})
+	err := tm.Start(60)
+	//err := tm.Wait()
 	if err != nil {
 		log.Fatal("error:time limit exceeded")
 	}
@@ -35,12 +37,13 @@ func main() {
 	data2 := tm.GetSummarysheet()
 	fmt.Printf("Start print Summarysheet len=%v \n", len(data2))
 	for i := 0; i < len(data2); i++ {
-		fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+		fmt.Printf("%s | %s |%s%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
 			data2[i].Sheet.StopData.Time.Format("15:04:05"),
-			data2[i].Sheet.Operaton)
+			data2[i].Sheet.Operaton,
+			data2[i].Sheet.Params)
 		d3 := data2[i].Details
 		for j := 0; j < len(d3); j++ {
-			fmt.Printf("____ %s | %s |%s %s\r\n", d3[j].StartData.Time.Format("15:04:05"),
+			fmt.Printf("____ %s | %s |%s%s\r\n", d3[j].StartData.Time.Format("15:04:05"),
 				d3[j].StopData.Time.Format("15:04:05"),
 				d3[j].Operaton,
 				d3[j].Params)
