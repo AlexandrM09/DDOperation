@@ -532,18 +532,18 @@ func (dt *Determine) addSummaryStr(p *SummarysheetT) {
 		switch data.Operaton {
 		case "Бурение", "Бурение ротор", "Бурение (слайд)":
 			rs.Sheet.Params =
-				fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с,W=%.1fт) ",
+				fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с,W=%.1fт)",
 					data.StartData.Values[3], data.StopData.Values[3],
 					data.Agv.Values[4], data.Agv.Values[5], data.Agv.Values[6])
 		case "Наращивание":
 			rs.Sheet.Params = fmt.Sprintf(" %.1fсв.", data.StopData.Values[10])
 		case "Промывка", "Проработка":
 			rs.Sheet.Params =
-				fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с) ",
+				fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с)",
 					data.StartData.Values[3], data.StopData.Values[3], data.Agv.Values[4], data.Agv.Values[5])
 		case "Подъем", "Спуск":
 			rs.Sheet.Params =
-				fmt.Sprintf(" в инт.%.1f - %.1fм ", data.StartData.Values[3], data.StopData.Values[3])
+				fmt.Sprintf(" в инт.%.1f - %.1fм", data.StartData.Values[3], data.StopData.Values[3])
 		}
 		//fmt.Println("Save item Summarysheet ",rs.Details)
 		dt.Data.summarysheet = append(dt.Data.summarysheet, rs)
@@ -620,3 +620,31 @@ func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 }
 
 //var l *log.Logger
+//FormatSheet format string function
+func FormatSheet(sh SummarysheetT) string {
+	return fmt.Sprintf("%s | %s |%s%s",
+		sh.Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+		sh.Sheet.StopData.Time.Format("15:04:05"),
+		sh.Sheet.Operaton,
+		sh.Sheet.Params)
+}
+
+//FormatSheetDetails format string function
+func FormatSheetDetails(Det OperationOne) string {
+	return fmt.Sprintf("____%s | %s |%s",
+		Det.StartData.Time.Format("15:04:05"),
+		Det.StopData.Time.Format("15:04:05"),
+		Det.Operaton)
+}
+
+//FormatSheet2 format string function
+func FormatSheet2(sh SummarysheetT) string {
+	tempt, _ := time.Parse("15:04:01", "00:00:00")
+	dur := sh.Sheet.StopData.Time.Sub(sh.Sheet.StartData.Time)
+	return fmt.Sprintf("%s | %s |%s |%s %s",
+		sh.Sheet.StartData.Time.Format("15:04"),
+		sh.Sheet.StopData.Time.Format("15:04"),
+		tempt.Add(dur).Format("15:04"),
+		sh.Sheet.Operaton,
+		sh.Sheet.Params)
+}

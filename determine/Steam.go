@@ -30,15 +30,15 @@ type SteamCsv struct {
 
 func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	defer func() {
-		
+
 		DoneCh <- struct{}{}
 
 	}()
-	
+
 	var err error
 	St.tm, err = time.Parse("2006-01-02 15:04:05", St.SatartTime)
 	St.bTime = err == nil
-	fmt.Printf("parse time=%v \n", St.bTime)
+	//fmt.Printf("parse time=%v \n", St.bTime)
 	var ScapeData ScapeDataD
 	sH := scapeHeader{}
 	r, err := zip.OpenReader(St.FilePath) //"../source/source.zip"
@@ -54,14 +54,14 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	if errf != nil {
 		log.Fatal("not open, ", errf)
 	}
-	fmt.Printf("create new reader \n")
+	fmt.Printf("create new reader zip file:%s\n", St.FilePath)
 	reader := csv.NewReader(rc)
 	reader.Comma = ';'
 	n := 0
 	//fmt.Printf("start for \n")
 	for {
 		if (n == 0) || (n%1000 == 0) {
-			fmt.Printf("record number= %v \n", n)
+			//fmt.Printf("record number= %v \n", n)
 		}
 		line, error := reader.Read()
 		if error == io.EOF { //|| (n > 5)
@@ -111,7 +111,7 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 			}
 		}
 		if St.bTime {
-			if ScapeData.Time.Sub(St.tm) >0  {
+			if ScapeData.Time.Sub(St.tm) > 0 {
 				ScapeDataCh <- ScapeData
 			}
 		} else {
@@ -191,6 +191,6 @@ func getTime(record []string) (time.Time, error) {
 	n = n - min*(1000*60)
 	sec := n / 1000
 	n = n - sec*1000
-	
+
 	return time.Date(year, month, day, h, min, sec, n, time.UTC), nil
 }

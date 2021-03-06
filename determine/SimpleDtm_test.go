@@ -1,13 +1,11 @@
 package determine
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 	_ "strconv"
 	"strings"
-
-	//"sync"
-	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -17,6 +15,7 @@ import (
 // simle steam
 type SteamSmpl struct{}
 
+//function return simple fake ScapeDate for TestSimpleDtm
 func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	//nothing
 	v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -34,7 +33,7 @@ func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 		if i > 19 {
 			ScapeData.Values = v3
 		}
-		fmt.Println("Sending ScapeData ", fmt.Sprint(i))
+		//fmt.Println("Sending ScapeData ", fmt.Sprint(i))
 		ScapeDataCh <- ScapeData
 		ScapeData.Time = ScapeData.Time.Add(time.Second)
 		//<-time.After(10 * time.Millisecond)
@@ -50,7 +49,7 @@ func TestSteamCsv(t *testing.T) {
 	DoneCh := make(chan struct{})
 	SteamCsv := &SteamCsv{FilePath: "../source/source.zip"}
 	go SteamCsv.Read(ScapeDataCh, DoneCh)
-	fmt.Printf("start")
+	fmt.Println("start test TestSteamCsv")
 	//data := []byte("Hello Bold!")
 	file, err := os.Create("operation.txt")
 	if err != nil {
@@ -63,7 +62,7 @@ func TestSteamCsv(t *testing.T) {
 		select {
 		case <-DoneCh:
 			{
-				fmt.Printf("finish")
+				fmt.Println("test TestSteamCsv completed successfully")
 				return
 			}
 		case Scd = <-ScapeDataCh:
@@ -80,14 +79,14 @@ func TestSteamCsv(t *testing.T) {
 }
 
 func TestElementaryDtm(t *testing.T) {
-	fmt.Println("Start test")
+	fmt.Println("Start test TestElementaryDtm")
 	file, errf := os.Create("operation.txt")
 	if errf != nil {
 		t.Errorf("Unable to create file")
 
 	}
 	defer file.Close()
-	fmt.Println("Load config")
+
 	Cfg := ConfigDt{}
 	errf = LoadConfigYaml("../config.yaml", &Cfg)
 	if errf != nil {
@@ -99,8 +98,8 @@ func TestElementaryDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source1.zip"})
-	_ = tm.Start(29)
-	err := tm.Wait()
+	err := tm.Start(29)
+	//err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
@@ -118,61 +117,49 @@ func TestElementaryDtm(t *testing.T) {
 	if len(resLines) == 0 {
 		t.Errorf("result1.txt is empty")
 	}
-	sres := ""
+
 	var n int
 	n = 0
 	data2 := tm.GetSummarysheet()
-	fmt.Printf("Start print Summarysheet len=%v \n", len(data))
+
 	for i := 0; i < len(data2); i++ {
 		//fmt.Printf("%s | %s |%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
 		//	data2[i].Sheet.StopData.Time.Format("15:04:05"),
 		//	data2[i].Sheet.Operaton)
-		sres = fmt.Sprintf("@@@@@%s | %s |%s %s ", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
-			data2[i].Sheet.StopData.Time.Format("15:04:05"),
-			data2[i].Sheet.Operaton, data2[i].Sheet.Params)
-		fmt.Println(sres)
-		if (!(sres == resLines[n])) && (n > 0) {
-			//t.Errorf("string not equale result1 ")
-			//fmt.Println("n=", strconv.Itoa(int(n)))
-			//fmt.Println("str=", sres)
-			//fmt.Println("r=", resLines[n])
+		sres1 := FormatSheet(data2[i])
+		//fmt.Println(sres)
+		sf := resLines[n]
+		if !(sres1 == sf) { // && (n > 0)
+			t.Errorf("string not equale result1 ")
+			t.Errorf("progrm:%s,i=%d,len=%d", sres1, i, len(sres1))
+			t.Errorf("result:%s,n=%d,len=%d", sf, n, len(sf))
+
 		}
 		n = n + 1
 		d3 := data2[i].Details
 
 		for j := 0; j < len(d3); j++ {
-			//fmt.Printf("____ %s | %s |%s \r\n", d3[j].StartData.Time.Format("15:04:05"),
-			//	d3[j].StopData.Time.Format("15:04:05"),
-			//	d3[j].Operaton)
-			sres = fmt.Sprintf("____ %s | %s |%s ", d3[j].StartData.Time.Format("15:04:05"),
-				d3[j].StopData.Time.Format("15:04:05"),
-				d3[j].Operaton)
-			fmt.Println(sres)
-			if sres == resLines[n] {
-				fmt.Println("OK")
-			}
-			if !(sres == resLines[n]) {
-				fmt.Println("not OK")
-			}
 
+			sres2 := FormatSheetDetails(data2[i].Details[j])
+			//fmt.Println(sres)
+			if !(sres2 == resLines[n]) {
+				t.Errorf("string not equale result1.txt ")
+				t.Errorf("programm:%s,i=%d,j=%d,len=%d", sres2, i, j, len(sres2))
+				t.Errorf(" result1:%s,n=%d,len=%d", resLines[n], n, len(resLines[n]))
+
+			}
 			n = n + 1
 			continue
-			if !(sres == resLines[n]) {
-				t.Errorf("string not equale result1 ")
-				t.Errorf("programm:%s,i=%d,j=%d,len=%d", sres, i, j, len(sres))
-				t.Errorf(" result1:%s,n=%d,len=%d", resLines[n], n, len(resLines[n]))
-				//fmt.Println("n=", strconv.Itoa(int(n)))
-				//fmt.Println("str=", sres)
-				//fmt.Println("r=", resLines[n])
-			}
-
 		}
 	}
+
+	fmt.Println("test TestElementaryDtm completed successfully")
 }
 
 //very simple determine test
 func TestSimpleDtm(t *testing.T) {
-	fmt.Println("Start test")
+	fmt.Println("Start test TestSimpleDtm")
+
 	Cfg := ConfigDt{}
 	errf := LoadConfig("../config.json", &Cfg)
 	if errf != nil {
@@ -185,8 +172,8 @@ func TestSimpleDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
-	_ = tm.Start(29)
-	err := tm.Wait()
+	err := tm.Start(29)
+	//err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
 	}
@@ -216,7 +203,7 @@ func TestSimpleDtm(t *testing.T) {
 			t.Errorf("incorrect time duration %v", n)
 		}
 	}
-
+	fmt.Println("test TestSimpleDtm completed successfully")
 }
 
 func CLog() *logrus.Logger {

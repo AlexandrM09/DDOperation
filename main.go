@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"time"
 
 	dtm "./determine"
 	logrus "github.com/sirupsen/logrus"
@@ -23,42 +22,38 @@ func main() {
 		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
-
 	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{
 		FilePath:   "./source/source1.zip",
 		SatartTime: "___2019-05-25 17:52:43",
 	})
 	err := tm.Start(60)
-	//err := tm.Wait()
 	if err != nil {
 		log.Fatal("error:time limit exceeded")
 	}
-
 	data2 := tm.GetSummarysheet()
 	fmt.Printf("Start print Summarysheet len=%v \n", len(data2))
 	for i := 0; i < len(data2); i++ {
-		fmt.Printf("%s | %s |%s%s \r\n", data2[i].Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
-			data2[i].Sheet.StopData.Time.Format("15:04:05"),
-			data2[i].Sheet.Operaton,
-			data2[i].Sheet.Params)
-		d3 := data2[i].Details
-		for j := 0; j < len(d3); j++ {
-			fmt.Printf("____ %s | %s |%s%s\r\n", d3[j].StartData.Time.Format("15:04:05"),
-				d3[j].StopData.Time.Format("15:04:05"),
-				d3[j].Operaton,
-				d3[j].Params)
+		fmt.Println(dtm.FormatSheet(data2[i]))
+
+		//d3 := data2[i].Details
+		for j := 0; j < len(data2[i].Details); j++ {
+			//d4 := d3[j]
+			fmt.Println(dtm.FormatSheetDetails(data2[i].Details[j]))
 
 		}
 	}
 	fmt.Printf("Start print Summarysheet short form len=%v \n", len(data2))
 	fmt.Println(data2[0].Sheet.StartData.Time.Format("2006-01-02"))
-	tempt, _ := time.Parse("15:04:01", "00:00:00")
-
+	//tempt, _ := time.Parse("15:04:01", "00:00:00")
 	for i := 0; i < len(data2); i++ {
-		dur := data2[i].Sheet.StopData.Time.Sub(data2[i].Sheet.StartData.Time)
-		fmt.Printf("%s | %s |%s |%s %s \r\n", data2[i].Sheet.StartData.Time.Format("15:04"),
-			data2[i].Sheet.StopData.Time.Format("15:04"), tempt.Add(dur).Format("15:04"),
-			data2[i].Sheet.Operaton, data2[i].Sheet.Params) //,data2[i].Sheet.Agv.Values)
+		fmt.Println(dtm.FormatSheet2(data2[i]))
+		//	dur := data2[i].Sheet.StopData.Time.Sub(data2[i].Sheet.StartData.Time)
+		//	fmt.Printf("%s | %s |%s |%s %s \r\n",
+		//		data2[i].Sheet.StartData.Time.Format("15:04"),
+		//		data2[i].Sheet.StopData.Time.Format("15:04"),
+		//		tempt.Add(dur).Format("15:04"),
+		//		data2[i].Sheet.Operaton,
+		//		data2[i].Sheet.Params) //,data2[i].Sheet.Agv.Values)
 	}
 }
 func createLog(ll logrus.Level) *logrus.Logger {
