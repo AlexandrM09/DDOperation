@@ -80,7 +80,7 @@ func (dt *Determine) Wait() (time.Duration, error) {
 				return nw1.Sub(dt.startTime), nil
 			}
 		case <-timer1.C:
-			//<-time.After(time.Duration(dt.waitTime) * time.Second):
+
 			{
 				//
 				dt.Data.DoneCh <- struct{}{}
@@ -116,7 +116,7 @@ func (dt *Determine) Wait() (time.Duration, error) {
 func (dt *Determine) Start(wt int) (time.Duration, error) {
 	dt.startTime = time.Now()
 	dt.waitTime = wt
-	dt.wg = &sync.WaitGroup{}
+
 	dt.wg.Add(1)
 	dt.Data.Log.WithFields(logrus.Fields{
 		"package":  "determine",
@@ -124,7 +124,7 @@ func (dt *Determine) Start(wt int) (time.Duration, error) {
 		//	"error":    nil,
 
 	}).Debug(" Start Steam ")
-	dt.Data.mu = &sync.RWMutex{}
+
 	go dt.Run()
 	//l.Println("Start determine")
 	dt.Data.Log.WithFields(logrus.Fields{
@@ -134,7 +134,7 @@ func (dt *Determine) Start(wt int) (time.Duration, error) {
 
 	}).Debug(" Start Steam ")
 	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh)
-	dt.mu = &sync.RWMutex{}
+
 	go dt.Summarysheet()
 	return dt.Wait() //nil
 }
@@ -187,7 +187,7 @@ func (dt *Determine) Summarysheet() {
 							"function":  "Summarysheet",
 							"status":    resStr.status,
 							"firstflag": dt.itemNew.firstflag,
-						}).Debug("if resStr.status == start")
+						}).Debug("one!! if resStr.status == start")
 					}
 					if resStr.status == "save" {
 						dt.itemNew.firstflag = 1
@@ -479,8 +479,8 @@ func (dt *Determine) saveoperation() {
 	}).Debug("Stop and save  operation")
 }
 func (dt *Determine) addSummaryStr(p *SummarysheetT) {
-	dt.mu.Lock()
-	defer dt.mu.Unlock()
+	//dt.mu.Lock()
+	//defer dt.mu.Unlock()
 	if p.Sheet.status == "save" {
 		rs := SummarysheetT{Sheet: p.Sheet}
 		rs.Details = p.Details[0:len(p.Details)]
@@ -565,14 +565,16 @@ func NewDetermine(ds *DrillDataType, sm SteamI) *Determine {
 	ds.DoneSummary = make(chan struct{})
 	ds.TimelimitCh = make(chan struct{})
 	ds.ActiveOperation = 1
+	ds.mu = &sync.RWMutex{}
 	return &Determine{Data: ds,
+		wg:    &sync.WaitGroup{},
+		mu:    &sync.RWMutex{},
 		Steam: sm,
 		ListCheck: []determineOne{&Check0{}, &Check1{},
 			&Check2{}, &Check3{}, &Check4{}, &Check5{}, &Check7{}, &Check8{}, &Check9{}, &Check10{}},
 	}
 }
 
-//var l *log.Logger
 //FormatSheet format string function
 func FormatSheet(sh SummarysheetT) string {
 	return fmt.Sprintf("%s | %s |%s%s",

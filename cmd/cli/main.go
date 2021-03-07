@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	dtm "./determine"
+	dtm ".pkg/determine"
+
 	logrus "github.com/sirupsen/logrus"
 	_ "gopkg.in/yaml.v2"
 )
