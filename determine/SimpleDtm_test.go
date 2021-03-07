@@ -98,7 +98,10 @@ func TestElementaryDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source1.zip"})
-	err := tm.Start(29)
+	//err := tm.Start(120)
+	dur, err := tm.Start(60)
+	tempt, _ := time.Parse("15:04:01", "00:00:00")
+	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	//err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")
@@ -172,7 +175,10 @@ func TestSimpleDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
-	err := tm.Start(29)
+	//err := tm.Start(120)
+	dur, err := tm.Start(60)
+	tempt, _ := time.Parse("15:04:01", "00:00:00")
+	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	//err := tm.Wait()
 	if err != nil {
 		t.Errorf("error:time limit exceeded")

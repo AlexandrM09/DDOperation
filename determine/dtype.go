@@ -23,6 +23,7 @@ type (
 		ScapeDataCh     chan ScapeDataD
 		ErrCh           chan error
 		DoneCh          chan struct{}
+		TimelimitCh     chan struct{}
 		DoneSummary     chan struct{}
 		ScapeFullData   bool
 		LastScapeData   ScapeDataD

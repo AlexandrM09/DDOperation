@@ -51,9 +51,6 @@ func checkOne0(d *DrillDataType) int {
 	var res int
 	res = -1
 	n := d.ScapeData.Values[2] - d.ScapeData.Values[3]
-	//	fmt.Printf("Drill n=%v \n",n)
-	//	fmt.Printf("CheckOne2(d)==%v \n",checkOne2(d))
-	//	fmt.Printf("d.Cfg.DephtTool=%v \n",d.Cfg.DephtTool)
 	if (checkOne2(d) == 2) && (n < d.Cfg.DephtTool) {
 		if d.Cfg.RotorSl > 0 {
 			if detRotation(d) {
@@ -69,8 +66,6 @@ func checkOne0(d *DrillDataType) int {
 
 //Check -making a connection
 func (o *Check1) Check(d *DrillDataType) (int, bool) {
-	//res := checkOne9(d)
-	//fmt.Printf("Check1 res1=%v \n",res)
 	if detCirculation(d) {
 		return -1, false
 	}
@@ -85,9 +80,7 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 	}
 	if d.ActiveOperation == 1 {
 		duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
-		//fmt.Printf("start %v ,max %v duratOp=%v \n",d.startActiveOperation,strconv.Itoa(int(d.Cfg.TimeIntervalMaxMkconn)) ,duratOp)
 		if duratOp < d.Cfg.TimeIntervalMaxMkconn {
-			//fmt.Println("res=1")
 			return 1, false
 		}
 		return 9, true
@@ -98,7 +91,6 @@ func (o *Check1) Check(d *DrillDataType) (int, bool) {
 
 //Check - drill test condition
 func (o *Check0) Check(d *DrillDataType) (int, bool) {
-
 	return checkOne0(d), false
 
 }
@@ -123,7 +115,6 @@ func (o *Check2) Check(d *DrillDataType) (int, bool) {
 	if (res == 2) && (detRotation(d)) {
 		return 3, false
 	}
-	//l.Printf("Flow out res=%v,time=%s \n", res, d.ScapeData.Time.Format("15:04:05"))
 	d.Log.WithFields(logrus.Fields{
 		"package":  "determine (Chek2)",
 		"function": "Check",
@@ -156,8 +147,6 @@ func (o *Check4) Check(d *DrillDataType) (int, bool) {
 		return -1, false // is not making a trip
 	}
 	deltaDepht := d.temp.LastTripData.Values[3] - d.ScapeData.Values[3]
-	//l.Printf("Up time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-	//l.Printf("Up deltaDepht=%v \n", deltaDepht)
 	d.Log.WithFields(logrus.Fields{
 		"package":  "determine (Chek4)",
 		"function": "Check",
@@ -170,8 +159,6 @@ func (o *Check4) Check(d *DrillDataType) (int, bool) {
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to send LastTripData
 			d.temp.FlagChangeTrip = 1
-			//l.Printf("d.temp.FlagChangeTrip = 1 Up time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-			//l.Printf("Up after duratOp,deltaDepht=%v,duratOp=%v \n", deltaDepht, strconv.Itoa((duratOp)))
 			d.Log.WithFields(logrus.Fields{
 				"package":  "determine (Chek4)",
 				"function": "Check",
@@ -185,12 +172,9 @@ func (o *Check4) Check(d *DrillDataType) (int, bool) {
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to send LastTripData
 			d.temp.FlagChangeTrip = 1
-			//l.Printf("Up time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-			//l.Printf("revers d.temp.FlagChangeTrip = 1 Up res=4 deltaDepht=%v \n", deltaDepht)
 			d.Log.WithFields(logrus.Fields{
-				"package":  "determine (Chek4)",
-				"function": "Check",
-				//	"error":    nil,
+				"package":       "determine (Chek4)",
+				"function":      "Check",
 				"Up deltaDepht": deltaDepht,
 				"duratOp":       strconv.Itoa((duratOp)),
 				"Up time":       d.ScapeData.Time.Format("15:04:05"),
@@ -214,8 +198,6 @@ func (o *Check5) Check(d *DrillDataType) (int, bool) {
 		return -1, false
 	} // is not making a trip
 	deltaDepht := d.ScapeData.Values[3] - d.temp.LastTripData.Values[3]
-	//l.Printf("Down time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-	//l.Printf("Down deltaDepht=%v \n", deltaDepht)
 	d.Log.WithFields(logrus.Fields{
 		"package":  "determine (Chek5)",
 		"function": "Check",
@@ -228,8 +210,6 @@ func (o *Check5) Check(d *DrillDataType) (int, bool) {
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to pass LastTripData
 			d.temp.FlagChangeTrip = 1
-			//l.Printf("d.temp.FlagChangeTrip = 1 down time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-			//l.Printf("Down after duratOp,deltaDepht=%v,duratOp=%v \n", deltaDepht, strconv.Itoa((duratOp)))
 			d.Log.WithFields(logrus.Fields{
 				"package":  "determine (Chek5)",
 				"function": "Check",
@@ -242,8 +222,6 @@ func (o *Check5) Check(d *DrillDataType) (int, bool) {
 		}
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to pass LastTripData
-			//l.Printf("Down time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-			//l.Printf("revers d.temp.FlagChangeTrip = 1 Down res=4 deltaDepht=%v \n", deltaDepht)
 			d.Log.WithFields(logrus.Fields{
 				"package":  "determine (Chek5)",
 				"function": "Check",
@@ -262,8 +240,6 @@ func (o *Check5) Check(d *DrillDataType) (int, bool) {
 		d.temp.LastTripData = d.ScapeData
 		return 5, false
 	}
-	//l.Printf("Down out time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-	//l.Printf("Down res=%v \n", -1)
 	d.Log.WithFields(logrus.Fields{
 		"package":  "determine (Chek5)",
 		"function": "Check",
@@ -289,14 +265,9 @@ func (o *Check8) Check(d *DrillDataType) (int, bool) {
 //Check - temp operation test condition
 func (o *Check9) Check(d *DrillDataType) (int, bool) {
 	res := checkOne9(d)
-	//l.Printf("Temp in time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-	//l.Printf("Temp res=%v \n", res)
-
 	d.Log.WithFields(logrus.Fields{
-		"package":  "determine (Chek9)",
-		"function": "Check",
-		//	"error":    nil,
-		//"Down deltaDepht": deltaDepht,
+		"package":   "determine (Chek9)",
+		"function":  "Check",
 		"Down time": d.ScapeData.Time.Format("15:04:05"),
 		"res":       res,
 	}).Debug(" temp operation test condition")
@@ -314,8 +285,6 @@ func (o *Check9) Check(d *DrillDataType) (int, bool) {
 			"Temp start cand": d.temp.LastStartData.Values[10],
 		}).Debug(" if d.ActiveOperation == 9 { ")
 		if d.ScapeData.Values[10] == 0 {
-			//l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-			//l.Printf("Cand=0 Tool=%v \n", d.temp.LastStartData.Values[3])
 			d.Log.WithFields(logrus.Fields{
 				"package":  "determine (Chek9)",
 				"function": "Check",
@@ -332,8 +301,6 @@ func (o *Check9) Check(d *DrillDataType) (int, bool) {
 			} //KNBK
 		}
 		//SPO
-		//l.Printf("Temp time=%s \n", d.ScapeData.Time.Format("15:04:05"))
-		//l.Printf("Temp start cand=%v \n", d.temp.LastStartData.Values[10])
 		d.Log.WithFields(logrus.Fields{
 			"package":  "determine (Chek9)",
 			"function": "Check",
@@ -347,8 +314,6 @@ func (o *Check9) Check(d *DrillDataType) (int, bool) {
 				return 1, true
 			}
 			d.temp.LastTripData = d.ScapeData
-			//l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
-			//l.Printf("Temp start cand(<)=%v \n", d.temp.LastStartData.Values[10])
 			d.Log.WithFields(logrus.Fields{
 				"package":  "determine (Chek9)",
 				"function": "Check",
@@ -367,8 +332,6 @@ func (o *Check9) Check(d *DrillDataType) (int, bool) {
 				return 1, true
 			}
 			duratOp := int(d.ScapeData.Time.Sub(d.startActiveOperation).Seconds())
-			//l.Printf("Temp cand=%v \n", d.ScapeData.Values[10])
-			//l.Printf("Temp start cand(>)=%v \n", d.temp.LastStartData.Values[10])
 			d.Log.WithFields(logrus.Fields{
 				"package":  "determine (Chek9)",
 				"function": "Check",
