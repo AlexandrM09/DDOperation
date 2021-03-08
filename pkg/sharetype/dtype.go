@@ -9,7 +9,8 @@ import (
 )
 
 type (
-	determineOne interface {
+	//DetermineOne type
+	DetermineOne interface {
 		Check(d *DrillDataType) (int, bool)
 	}
 	//SteamI basic interface for operations recognition
@@ -21,7 +22,7 @@ type (
 		wg        *sync.WaitGroup
 		Data      *DrillDataType
 		Steam     SteamI
-		ListCheck []determineOne
+		ListCheck []DetermineOne
 		//  activecheck determineOne
 		startTime time.Time
 		waitTime  int
