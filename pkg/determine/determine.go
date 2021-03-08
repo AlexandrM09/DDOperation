@@ -16,13 +16,6 @@ import (
 
 type (
 	listoperation []string
-	determineOne  interface {
-		Check(d *DrillDataType) (int, bool)
-	}
-	//SteamI basic interface for operations recognition
-	SteamI interface {
-		Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{})
-	}
 )
 
 //Wait waiting for completion

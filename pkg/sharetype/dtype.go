@@ -9,7 +9,13 @@ import (
 )
 
 type (
-
+	determineOne interface {
+		Check(d *DrillDataType) (int, bool)
+	}
+	//SteamI basic interface for operations recognition
+	SteamI interface {
+		Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{})
+	}
 	//Determine basic data struct
 	Determine struct {
 		wg        *sync.WaitGroup
