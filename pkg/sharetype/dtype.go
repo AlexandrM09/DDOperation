@@ -9,45 +9,13 @@ import (
 )
 
 type (
-	//DetermineOne type
-	DetermineOne interface {
-		Check(d *DrillDataType) (int, bool)
-	}
-	//SteamI basic interface for operations recognition
-	SteamI interface {
-		Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{})
-	}
-	//Determine basic data struct
-	Determine struct {
-		wg        *sync.WaitGroup
-		Data      *DrillDataType
-		Steam     SteamI
-		ListCheck []DetermineOne
-		//  activecheck determineOne
-		startTime time.Time
-		waitTime  int
-		mu        *sync.RWMutex
-		itemNew   struct {
-			resSheet  SummarysheetT
-			firstflag int
-			startflag int
-			startTime time.Time
-			//stopTime  time.Time
-			sumItemDr int
-			//res       OperationOne
-			next     OperationOne
-			nextTime struct {
-				flag  int
-				start time.Time
-			}
-		}
-	}
+
 	//DrillDataType drill basic data struct
 	DrillDataType struct {
-		operationList []OperationOne
-		summarysheet  []SummarysheetT
+		OperationList []OperationOne
+		Summarysheet  []SummarysheetT
 
-		steamCh         chan OperationOne
+		SteamCh         chan OperationOne
 		ScapeDataCh     chan ScapeDataD
 		ErrCh           chan error
 		DoneCh          chan struct{}
@@ -57,7 +25,7 @@ type (
 		LastScapeData   ScapeDataD
 		ScapeData       ScapeDataD
 		ActiveOperation int
-		temp            struct {
+		Temp            struct {
 			LastToolDepht     float32
 			LastTimeToolDepht time.Time
 			StartDepht        float32
@@ -65,10 +33,10 @@ type (
 			LastTripData      ScapeDataD
 			FlagChangeTrip    int
 		}
-		startActiveOperation time.Time
+		StartActiveOperation time.Time
 		//Operationtype   OperationtypeD
 		Log *logrus.Logger
-		mu  *sync.RWMutex
+		Mu  *sync.RWMutex
 		Cfg *ConfigDt
 	}
 	//SummarysheetT -type result list
@@ -111,14 +79,12 @@ type (
 	}
 	//OperationOne description of one operation
 	OperationOne struct {
-		status                                     string
-		StartData, StopData, maxData, minData, Agv ScapeDataD
-		//buf_count,count int;
-		//buf:array [0..bufSize] of ageooscape_data;
-		Lastchangeoperation string
-		count               int
-		Operaton            string
-		Params              string
+		Status                                     string
+		StartData, StopData, MaxData, MinData, Agv ScapeDataD
+		Lastchangeoperation                        string
+		Count                                      int
+		Operaton                                   string
+		Params                                     string
 	}
 )
 

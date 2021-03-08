@@ -1,4 +1,4 @@
-package determine
+package steamd
 
 import (
 	"archive/zip"
@@ -10,12 +10,21 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
 )
 
-//SteamRND test steam
-type SteamRND struct{}
+type (
+	//SteamI basic interface for operations recognition
+	SteamI interface {
+		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{})
+	}
 
-func (St *SteamRND) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
+	//SteamRND test steam
+	SteamRND struct{}
+)
+
+func (St *SteamRND) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
 	fmt.Println("RND")
 	return
 }
@@ -28,7 +37,7 @@ type SteamCsv struct {
 	bTime      bool
 }
 
-func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
+func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
 	defer func() {
 
 		DoneCh <- struct{}{}
@@ -39,7 +48,7 @@ func (St *SteamCsv) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	St.tm, err = time.Parse("2006-01-02 15:04:05", St.SatartTime)
 	St.bTime = err == nil
 	//fmt.Printf("parse time=%v \n", St.bTime)
-	var ScapeData ScapeDataD
+	var ScapeData nt.ScapeDataD
 	sH := scapeHeader{}
 	r, err := zip.OpenReader(St.FilePath) //"../source/source.zip"
 	if err != nil {

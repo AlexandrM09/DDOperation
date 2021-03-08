@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,7 +17,7 @@ import (
 type SteamSmpl struct{}
 
 //function return simple fake ScapeDate for TestSimpleDtm
-func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
+func (St *SteamSmpl) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
 	//nothing
 	v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	//flow data
@@ -25,7 +26,7 @@ func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 	//drill data
 	v3 := v2
 	v3[3] = 100
-	ScapeData := ScapeDataD{Time: time.Now(), Values: v1}
+	ScapeData := nt.ScapeDataD{Time: time.Now(), Values: v1}
 	for i := 0; i < 30; i++ {
 		if i > 9 {
 			ScapeData.Values = v2
@@ -44,8 +45,8 @@ func (St *SteamSmpl) Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{}) {
 
 //test steam for csv files
 func TestSteamCsv(t *testing.T) {
-	var Scd ScapeDataD
-	ScapeDataCh := make(chan ScapeDataD)
+	var Scd nt.ScapeDataD
+	ScapeDataCh := make(chan nt.ScapeDataD)
 	DoneCh := make(chan struct{})
 	SteamCsv := &SteamCsv{FilePath: "../../source/source.zip"}
 	go SteamCsv.Read(ScapeDataCh, DoneCh)
@@ -87,12 +88,12 @@ func TestElementaryDtm(t *testing.T) {
 	}
 	defer file.Close()
 
-	Cfg := ConfigDt{}
+	Cfg := nt.ConfigDt{}
 	errf = LoadConfigYaml("../../config.yaml", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
-	sr := DrillDataType{
+	sr := nt.DrillDataType{
 		Log: CLog(),
 		Cfg: &Cfg,
 	}
@@ -163,13 +164,13 @@ func TestElementaryDtm(t *testing.T) {
 func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start test TestSimpleDtm")
 
-	Cfg := ConfigDt{}
+	Cfg := nt.ConfigDt{}
 	errf := LoadConfigYaml("../../config.yaml", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
 
-	sr := DrillDataType{
+	sr := nt.DrillDataType{
 		Log: CLog(),
 		Cfg: &Cfg,
 	}
@@ -196,7 +197,7 @@ func TestSimpleDtm(t *testing.T) {
 		t.Errorf("the number of operations does not match")
 	}
 	neadres := [3]string{"Наращивание", "Промывка", "Бурение"}
-	var dd OperationOne
+	var dd nt.OperationOne
 	var n int64
 
 	for i := 0; i < len(data); i++ {

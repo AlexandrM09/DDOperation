@@ -7,23 +7,25 @@ import (
 	"path/filepath"
 	"time"
 
+	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
 	dtm "github.com/AlexandrM09/DDOperation/pkg/determine"
+	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
 
 	logrus "github.com/sirupsen/logrus"
 	_ "gopkg.in/yaml.v2"
 )
 
 func main() {
-	Cfg := dtm.ConfigDt{}
+	Cfg := nt.ConfigDt{}
 	errf := dtm.LoadConfigYaml("config.yaml", &Cfg)
 	if errf != nil {
 		log.Fatal("not load config file")
 	}
-	sr := dtm.DrillDataType{
+	sr := nt.DrillDataType{
 		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
-	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{
+	tm := dtm.NewDetermine(&sr, &steam.SteamCsv{
 		FilePath:   "./source/source2.zip",
 		SatartTime: "___2019-05-25 17:52:43",
 	})
