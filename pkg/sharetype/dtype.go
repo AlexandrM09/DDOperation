@@ -1,4 +1,4 @@
-package typedetermine
+package sharetype
 
 import (
 	"sync"
