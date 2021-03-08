@@ -47,7 +47,7 @@ func TestSteamCsv(t *testing.T) {
 	var Scd ScapeDataD
 	ScapeDataCh := make(chan ScapeDataD)
 	DoneCh := make(chan struct{})
-	SteamCsv := &SteamCsv{FilePath: "../source/source.zip"}
+	SteamCsv := &SteamCsv{FilePath: "../../source/source.zip"}
 	go SteamCsv.Read(ScapeDataCh, DoneCh)
 	fmt.Println("start test TestSteamCsv")
 	//data := []byte("Hello Bold!")
@@ -88,7 +88,7 @@ func TestElementaryDtm(t *testing.T) {
 	defer file.Close()
 
 	Cfg := ConfigDt{}
-	errf = LoadConfigYaml("../config.yaml", &Cfg)
+	errf = LoadConfigYaml("../../config.yaml", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
@@ -97,7 +97,7 @@ func TestElementaryDtm(t *testing.T) {
 		Cfg: &Cfg,
 	}
 
-	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../source/source1.zip"})
+	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../../source/source1.zip"})
 	//err := tm.Start(120)
 	dur, err := tm.Start(60)
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
@@ -164,7 +164,7 @@ func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start test TestSimpleDtm")
 
 	Cfg := ConfigDt{}
-	errf := LoadConfig("../config.json", &Cfg)
+	errf := LoadConfigYaml("../../config.yaml", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
@@ -195,7 +195,7 @@ func TestSimpleDtm(t *testing.T) {
 	if !(len(data) == 3) {
 		t.Errorf("the number of operations does not match")
 	}
-	neadres := [3]string{"Наращивание", "Промывка", "Бурение (слайд)"}
+	neadres := [3]string{"Наращивание", "Промывка", "Бурение"}
 	var dd OperationOne
 	var n int64
 

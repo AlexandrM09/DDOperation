@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	dtm ".pkg/determine"
+	dtm "github.com/AlexandrM09/DDOperation/pkg/determine"
 
 	logrus "github.com/sirupsen/logrus"
 	_ "gopkg.in/yaml.v2"
@@ -15,7 +15,7 @@ import (
 
 func main() {
 	Cfg := dtm.ConfigDt{}
-	errf := dtm.LoadConfigYaml("./config.yaml", &Cfg)
+	errf := dtm.LoadConfigYaml("config.yaml", &Cfg)
 	if errf != nil {
 		log.Fatal("not load config file")
 	}
@@ -24,7 +24,7 @@ func main() {
 		Cfg: &Cfg,
 	}
 	tm := dtm.NewDetermine(&sr, &dtm.SteamCsv{
-		FilePath:   "./source/source1.zip",
+		FilePath:   "./source/source2.zip",
 		SatartTime: "___2019-05-25 17:52:43",
 	})
 	dur, err := tm.Start(60)

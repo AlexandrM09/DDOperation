@@ -1,4 +1,4 @@
-package determine
+package typedetermine
 
 import (
 	"sync"
@@ -9,10 +9,31 @@ import (
 )
 
 type (
-	//SummarysheetT -type result list
-	SummarysheetT struct {
-		Sheet   OperationOne
-		Details []OperationOne
+
+	//Determine basic data struct
+	Determine struct {
+		wg        *sync.WaitGroup
+		Data      *DrillDataType
+		Steam     SteamI
+		ListCheck []determineOne
+		//  activecheck determineOne
+		startTime time.Time
+		waitTime  int
+		mu        *sync.RWMutex
+		itemNew   struct {
+			resSheet  SummarysheetT
+			firstflag int
+			startflag int
+			startTime time.Time
+			//stopTime  time.Time
+			sumItemDr int
+			//res       OperationOne
+			next     OperationOne
+			nextTime struct {
+				flag  int
+				start time.Time
+			}
+		}
 	}
 	//DrillDataType drill basic data struct
 	DrillDataType struct {
@@ -42,6 +63,11 @@ type (
 		Log *logrus.Logger
 		mu  *sync.RWMutex
 		Cfg *ConfigDt
+	}
+	//SummarysheetT -type result list
+	SummarysheetT struct {
+		Sheet   OperationOne
+		Details []OperationOne
 	}
 	//OperationtypeD array drilling type operation
 	/*

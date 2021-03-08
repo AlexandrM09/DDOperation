@@ -23,31 +23,6 @@ type (
 	SteamI interface {
 		Read(ScapeDataCh chan ScapeDataD, DoneCh chan struct{})
 	}
-	//Determine basic data struct
-	Determine struct {
-		wg        *sync.WaitGroup
-		Data      *DrillDataType
-		Steam     SteamI
-		ListCheck []determineOne
-		//  activecheck determineOne
-		startTime time.Time
-		waitTime  int
-		mu        *sync.RWMutex
-		itemNew   struct {
-			resSheet  SummarysheetT
-			firstflag int
-			startflag int
-			startTime time.Time
-			//stopTime  time.Time
-			sumItemDr int
-			//res       OperationOne
-			next     OperationOne
-			nextTime struct {
-				flag  int
-				start time.Time
-			}
-		}
-	}
 )
 
 //Wait waiting for completion
