@@ -10,6 +10,7 @@ import (
 	"time"
 
 	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
+	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,7 +18,7 @@ import (
 type SteamSmpl struct{}
 
 //function return simple fake ScapeDate for TestSimpleDtm
-func (St *SteamSmpl) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
+func (St *SteamSmpl) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}) {
 	//nothing
 	v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	//flow data
@@ -48,8 +49,9 @@ func TestSteamCsv(t *testing.T) {
 	var Scd nt.ScapeDataD
 	ScapeDataCh := make(chan nt.ScapeDataD)
 	DoneCh := make(chan struct{})
-	SteamCsv := &SteamCsv{FilePath: "../../source/source.zip"}
-	go SteamCsv.Read(ScapeDataCh, DoneCh)
+	Done := make(chan struct{})
+	SteamCsv := &steam.SteamCsv{FilePath: "../../source/source.zip"}
+	go SteamCsv.Read(ScapeDataCh, DoneCh, Done)
 	fmt.Println("start test TestSteamCsv")
 	//data := []byte("Hello Bold!")
 	file, err := os.Create("operation.txt")
@@ -98,7 +100,7 @@ func TestElementaryDtm(t *testing.T) {
 		Cfg: &Cfg,
 	}
 
-	tm := NewDetermine(&sr, &SteamCsv{FilePath: "../../source/source1.zip"})
+	tm := NewDetermine(&sr, &steam.SteamCsv{FilePath: "../../source/source1.zip"})
 	//err := tm.Start(120)
 	dur, err := tm.Start(60)
 	tempt, _ := time.Parse("15:04:01", "00:00:00")

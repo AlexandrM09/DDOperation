@@ -17,14 +17,18 @@ import (
 type (
 	//SteamI basic interface for operations recognition
 	SteamI interface {
-		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{})
+		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{})
+	}
+	//SteamI2 basic interface for operations recognition variant two
+	SteamI2 interface {
+		ReadCsv(Done chan struct{}) chan nt.ScapeDataD
 	}
 
 	//SteamRND test steam
 	SteamRND struct{}
 )
 
-func (St *SteamRND) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
+func (St *SteamRND) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}) {
 	fmt.Println("RND")
 	return
 }
@@ -35,9 +39,68 @@ type SteamCsv struct {
 	SatartTime string
 	tm         time.Time
 	bTime      bool
+	Dur        time.Duration
 }
 
-func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
+//ReadCsvTime steam SteamI2 for time
+func (St *SteamCsv) ReadCsvTime(Done chan struct{}) chan nt.ScapeDataD {
+	ScapeDataCh := make(chan nt.ScapeDataD)
+	ScapeDataChInside := make(chan nt.ScapeDataD)
+	DoneInside := make(chan struct{})
+	timer1 := time.NewTimer(St.Dur)
+	go func() {
+		defer func() {
+			close(ScapeDataCh)
+			close(ScapeDataChInside)
+			close(DoneInside)
+		}()
+		// !!!!nead add new done chanel for exit St.Read
+		go St.Read(ScapeDataChInside, DoneInside, Done)
+		for {
+			select {
+			case <-timer1.C:
+				{
+					select {
+					case ScapeDataCh <- <-ScapeDataChInside:
+
+					default:
+					}
+				}
+			case <-DoneInside:
+				{
+					timer1.Stop()
+					return
+				}
+
+			}
+		}
+	}()
+	return ScapeDataCh
+}
+
+//ReadCsv steam SteamI2
+func (St *SteamCsv) ReadCsv(Done chan struct{}) chan nt.ScapeDataD {
+	ScapeDataCh := make(chan nt.ScapeDataD)
+	DoneInside := make(chan struct{})
+	go func() {
+		defer func() {
+			close(ScapeDataCh)
+			close(DoneInside)
+		}()
+		// !!!!nead add new done chanel for exit St.Read
+		go St.Read(ScapeDataCh, DoneInside, Done)
+		for {
+			select {
+
+			case <-DoneInside:
+				return
+
+			}
+		}
+	}()
+	return ScapeDataCh
+}
+func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, Done chan struct{}) {
 	defer func() {
 
 		DoneCh <- struct{}{}
@@ -84,7 +147,11 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
 			}
 			continue
 		}
-		ScapeData.Time, _ = getTime(line)
+		err = nil
+		ScapeData.Time, err = getTime(line)
+		if !(err == nil) {
+			continue
+		}
 		len := len(line)
 		for i := 2; i < 20; i++ {
 			if (sH[i] > 2) && (len > sH[i]) {
@@ -101,6 +168,16 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}) {
 			ScapeDataCh <- ScapeData
 		}
 		n++
+
+		select {
+		case <-Done:
+			{
+				return
+			}
+		default:
+			{
+			}
+		}
 	}
 	return
 }

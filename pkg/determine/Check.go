@@ -4,11 +4,9 @@ import (
 	//	_ "fmt"
 	_ "fmt"
 	_ "math"
-	"strconv"
 	"time"
 
 	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
-	"github.com/sirupsen/logrus"
 )
 
 /*
@@ -116,13 +114,7 @@ func (o *Check2) Check(d *nt.DrillDataType) (int, bool) {
 	if (res == 2) && (detRotation(d)) {
 		return 3, false
 	}
-	d.Log.WithFields(logrus.Fields{
-		"package":  "determine (Chek2)",
-		"function": "Check",
-		//	"error":    nil,
-		"Flow out ": res,
-		"time":      d.ScapeData.Time.Format("15:04:05"),
-	}).Debug(" Check - circulation test condition ")
+	d.Log.Debug(" Check - circulation test condition ")
 	return res, false
 
 }
@@ -148,38 +140,19 @@ func (o *Check4) Check(d *nt.DrillDataType) (int, bool) {
 		return -1, false // is not making a trip
 	}
 	deltaDepht := d.Temp.LastTripData.Values[3] - d.ScapeData.Values[3]
-	d.Log.WithFields(logrus.Fields{
-		"package":  "determine (Chek4)",
-		"function": "Check",
-		//	"error":    nil,
-		"Up deltaDepht": deltaDepht,
-		"Up time":       d.ScapeData.Time.Format("15:04:05"),
-	}).Debug(" making a trip (Up) ")
+	d.Log.Debug(" making a trip (Up) ")
 	if deltaDepht < 0.005 {
 		duratOp := int(d.ScapeData.Time.Sub(d.Temp.LastTripData.Time).Seconds())
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to send LastTripData
 			d.Temp.FlagChangeTrip = 1
-			d.Log.WithFields(logrus.Fields{
-				"package":  "determine (Chek4)",
-				"function": "Check",
-				//	"error":    nil,
-				"Up deltaDepht": deltaDepht,
-				"duratOp":       strconv.Itoa((duratOp)),
-				"Up time":       d.ScapeData.Time.Format("15:04:05"),
-			}).Debug("  (Up) if duratOp > d.Cfg.TimeIntervalMkTrip { ")
+			d.Log.Debug("  (Up) if duratOp > d.Cfg.TimeIntervalMkTrip { ")
 			return 9, false
 		}
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to send LastTripData
 			d.Temp.FlagChangeTrip = 1
-			d.Log.WithFields(logrus.Fields{
-				"package":       "determine (Chek4)",
-				"function":      "Check",
-				"Up deltaDepht": deltaDepht,
-				"duratOp":       strconv.Itoa((duratOp)),
-				"Up time":       d.ScapeData.Time.Format("15:04:05"),
-			}).Debug("  (Up) if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) ")
+			d.Log.Debug("  (Up) if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) ")
 			return 5, false
 		}
 		return 4, false
@@ -199,38 +172,18 @@ func (o *Check5) Check(d *nt.DrillDataType) (int, bool) {
 		return -1, false
 	} // is not making a trip
 	deltaDepht := d.ScapeData.Values[3] - d.Temp.LastTripData.Values[3]
-	d.Log.WithFields(logrus.Fields{
-		"package":  "determine (Chek5)",
-		"function": "Check",
-		//	"error":    nil,
-		"Down deltaDepht": deltaDepht,
-		"Down time":       d.ScapeData.Time.Format("15:04:05"),
-	}).Debug(" making a trip (Down) ")
+	d.Log.Debug(" making a trip (Down) ")
 	if deltaDepht < 0.005 {
 		duratOp := int(d.ScapeData.Time.Sub(d.Temp.LastTripData.Time).Seconds())
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to pass LastTripData
 			d.Temp.FlagChangeTrip = 1
-			d.Log.WithFields(logrus.Fields{
-				"package":  "determine (Chek5)",
-				"function": "Check",
-				//	"error":    nil,
-				"Down deltaDepht": deltaDepht,
-				"Down time":       d.ScapeData.Time.Format("15:04:05"),
-				"duratOp":         strconv.Itoa((duratOp)),
-			}).Debug(" (Down) if duratOp > d.Cfg.TimeIntervalMkTrip {")
+			d.Log.Debug(" (Down) if duratOp > d.Cfg.TimeIntervalMkTrip {")
 			return 9, false
 		}
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to pass LastTripData
-			d.Log.WithFields(logrus.Fields{
-				"package":  "determine (Chek5)",
-				"function": "Check",
-				//	"error":    nil,
-				"Down deltaDepht": deltaDepht,
-				"Down time":       d.ScapeData.Time.Format("15:04:05"),
-				"duratOp":         strconv.Itoa((duratOp)),
-			}).Debug(" (Down) if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {")
+			d.Log.Debug(" (Down) if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {")
 			d.Temp.FlagChangeTrip = 1
 			return 4, false
 		}
@@ -241,15 +194,7 @@ func (o *Check5) Check(d *nt.DrillDataType) (int, bool) {
 		d.Temp.LastTripData = d.ScapeData
 		return 5, false
 	}
-	d.Log.WithFields(logrus.Fields{
-		"package":  "determine (Chek5)",
-		"function": "Check",
-		//	"error":    nil,
-		//"Down deltaDepht": deltaDepht,
-		"Down time": d.ScapeData.Time.Format("15:04:05"),
-		"res":       -1,
-		//"duratOp":         strconv.Itoa((duratOp)),
-	}).Debug(" return -1, false")
+	d.Log.Debug(" return -1, false")
 	return -1, false
 }
 
@@ -266,33 +211,16 @@ func (o *Check8) Check(d *nt.DrillDataType) (int, bool) {
 //Check - temp operation test condition
 func (o *Check9) Check(d *nt.DrillDataType) (int, bool) {
 	res := checkOne9(d)
-	d.Log.WithFields(logrus.Fields{
-		"package":   "determine (Chek9)",
-		"function":  "Check",
-		"Down time": d.ScapeData.Time.Format("15:04:05"),
-		"res":       res,
-	}).Debug(" temp operation test condition")
+	d.Log.Debug(" temp operation test condition")
 	if res != 9 {
 		return res, false
 	}
 
 	if d.ActiveOperation == 9 {
 
-		d.Log.WithFields(logrus.Fields{
-			"package":  "determine (Chek9)",
-			"function": "Check",
-			//	"error":    nil,
-			"Temp cand":       d.ScapeData.Values[10],
-			"Temp start cand": d.Temp.LastStartData.Values[10],
-		}).Debug(" if d.ActiveOperation == 9 { ")
+		d.Log.Debug(" if d.ActiveOperation == 9 { ")
 		if d.ScapeData.Values[10] == 0 {
-			d.Log.WithFields(logrus.Fields{
-				"package":  "determine (Chek9)",
-				"function": "Check",
-				//	"error":    nil,
-				"Temp cand":       d.ScapeData.Values[10],
-				"Temp start cand": d.Temp.LastStartData.Values[10],
-			}).Debug("if d.ScapeData.Values[10] == 0")
+			d.Log.Debug("if d.ScapeData.Values[10] == 0")
 			if d.ScapeData.Values[3] < 0.2 {
 
 				return 9, false
@@ -302,26 +230,14 @@ func (o *Check9) Check(d *nt.DrillDataType) (int, bool) {
 			} //KNBK
 		}
 		//SPO
-		d.Log.WithFields(logrus.Fields{
-			"package":  "determine (Chek9)",
-			"function": "Check",
-			//	"error":    nil,
-			"Temp cand":       d.ScapeData.Values[10],
-			"Temp start cand": d.Temp.LastStartData.Values[10],
-		}).Debug("SPO")
+		d.Log.Debug("SPO")
 		nz := d.ScapeData.Values[2] - d.ScapeData.Values[3]
 		if d.ScapeData.Values[10] < d.Temp.LastStartData.Values[10] {
 			if nz < 13 {
 				return 1, true
 			}
 			d.Temp.LastTripData = d.ScapeData
-			d.Log.WithFields(logrus.Fields{
-				"package":  "determine (Chek9)",
-				"function": "Check",
-				//	"error":    nil,
-				"Temp cand":       d.ScapeData.Values[10],
-				"Temp start cand": d.Temp.LastStartData.Values[10],
-			}).Debug("if d.ScapeData.Values[10] < d.temp.LastStartData.Values[10] {")
+			d.Log.Debug("if d.ScapeData.Values[10] < d.temp.LastStartData.Values[10] {")
 			duratOp := int(d.ScapeData.Time.Sub(d.StartActiveOperation).Seconds())
 			if duratOp < d.Cfg.TimeIntervalAll {
 				return 4, true
@@ -333,13 +249,7 @@ func (o *Check9) Check(d *nt.DrillDataType) (int, bool) {
 				return 1, true
 			}
 			duratOp := int(d.ScapeData.Time.Sub(d.StartActiveOperation).Seconds())
-			d.Log.WithFields(logrus.Fields{
-				"package":  "determine (Chek9)",
-				"function": "Check",
-				//	"error":    nil,
-				"Temp cand":       d.ScapeData.Values[10],
-				"Temp start cand": d.Temp.LastStartData.Values[10],
-			}).Debug(" Candel now > candel last ")
+			d.Log.Debug(" Candel now > candel last ")
 			d.Temp.LastTripData = d.ScapeData
 			if duratOp < d.Cfg.TimeIntervalAll {
 				return 5, true

@@ -6,20 +6,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 
 	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
 	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
 
 type (
 	listoperation []string
 	//DetermineOne type
-	DetermineOne interface {
+	determineOne interface {
 		Check(d *nt.DrillDataType) (int, bool)
 	}
 	//Determine basic data struct
@@ -27,12 +25,12 @@ type (
 		wg        *sync.WaitGroup
 		Data      *nt.DrillDataType
 		Steam     steam.SteamI
-		ListCheck []DetermineOne
+		ListCheck []determineOne
 		//  activecheck determineOne
 		startTime time.Time
 		waitTime  int
-		Mu        *sync.RWMutex
-		itemNew   struct {
+		//	Mu        *sync.RWMutex
+		itemNew struct {
 			resSheet  nt.SummarysheetT
 			firstflag int
 			startflag int
@@ -40,7 +38,7 @@ type (
 			//stopTime  time.Time
 			sumItemDr int
 			//res       OperationOne
-			next     nt.OperationOne
+			//next     nt.OperationOne
 			nextTime struct {
 				flag  int
 				start time.Time
@@ -53,14 +51,12 @@ type (
 func (dt *Determine) Wait() (time.Duration, error) {
 	ch := make(chan struct{})
 	defer func() {
-		dt.Data.Log.WithFields(logrus.Fields{
-			"package":  "determine",
-			"function": " Wait()",
-		}).Debug(" Done ( Wait())")
+		dt.Data.Log.Debug(" Done ( Wait())")
 		close(ch)
 		close(dt.Data.DoneSummary)
 		close(dt.Data.TimelimitCh)
 		close(dt.Data.DoneCh)
+		close(dt.Data.Done)
 	}()
 
 	timer1 := time.NewTimer(time.Second * time.Duration(dt.waitTime))
@@ -72,8 +68,7 @@ func (dt *Determine) Wait() (time.Duration, error) {
 	for {
 		select {
 		case <-ch:
-			{ //dur := sh.Sheet.StopData.Time.Sub(sh.Sheet.StartData.Time)
-
+			{
 				timer1.Stop()
 				nw1 := time.Now()
 				return nw1.Sub(dt.startTime), nil
@@ -83,12 +78,9 @@ func (dt *Determine) Wait() (time.Duration, error) {
 			{
 				//
 				dt.Data.DoneCh <- struct{}{}
-				//timer1.Reset()
-				//multiple millisecond delay to prevent race detection when exiting
-				//timer1 = time.NewTimer(time.Millisecond * time.Duration(dt.waitTime))
 
 				for {
-					//d := dt.Data
+
 					select {
 					case <-ch:
 						{
@@ -96,11 +88,6 @@ func (dt *Determine) Wait() (time.Duration, error) {
 							nw1 := time.Now()
 							return nw1.Sub(dt.startTime), errors.New("time limit exceeded,normal output")
 						}
-						//case <-timer1.C:
-						//	{
-						//		nw1 := time.Now()
-						//		return nw1.Sub(dt.startTime), errors.New("time limit exceeded,abnormal output")
-						//	}
 
 					}
 				}
@@ -117,23 +104,11 @@ func (dt *Determine) Start(wt int) (time.Duration, error) {
 	dt.waitTime = wt
 
 	dt.wg.Add(1)
-	dt.Data.Log.WithFields(logrus.Fields{
-		"package":  "determine",
-		"function": "Start",
-		//	"error":    nil,
-
-	}).Debug(" Start Steam ")
-
+	dt.Data.Log.Debug(" Start Steam ")
 	go dt.Run()
 	//l.Println("Start determine")
-	dt.Data.Log.WithFields(logrus.Fields{
-		"package":  "determine",
-		"function": "Start",
-		//	"error":    nil,
-
-	}).Debug(" Start Steam ")
-	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh)
-
+	dt.Data.Log.Debug(" Start Steam ")
+	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh, dt.Data.Done)
 	go dt.Summarysheet()
 	return dt.Wait() //nil
 }
@@ -147,46 +122,22 @@ func (dt *Determine) Summarysheet() {
 			{
 
 				len2 := len(dt.itemNew.resSheet.Details)
-				dt.Data.Log.WithFields(logrus.Fields{
-					"package":  "determine",
-					"function": "Summarysheet",
-					//	"error":    nil,
-					"status":    resStr.Status,
-					"firstflag": dt.itemNew.firstflag,
-				}).Debug("done and save operation")
+				dt.Data.Log.Debug("done and save operation")
 				//dt.mu.Lock()
 				//defer dt.mu.Unlock()
 				dt.itemNew.resSheet.Sheet.StopData = dt.itemNew.resSheet.Details[len2-1].StopData
 				dt.addSummaryStr(&dt.itemNew.resSheet)
 				dt.wg.Done()
-				//dt.Data.TimelimitCh <- struct{}{}
 				return
 			}
 		case resStr = <-dt.Data.SteamCh:
 			{
-				dt.Data.Log.WithFields(logrus.Fields{
-					"package":  "determine",
-					"function": "Summarysheet",
-					//	"error":    nil,
-					"status":    resStr.Status,
-					"firstflag": dt.itemNew.firstflag,
-				}).Debug("case resStr = <-dt.Data.steamCh:")
+				dt.Data.Log.Debug("case resStr = <-dt.Data.steamCh:  status:%s", resStr.Status)
 				if dt.itemNew.firstflag == 0 {
-					dt.Data.Log.WithFields(logrus.Fields{
-						"package":  "determine",
-						"function": "Summarysheet",
-						//	"error":    nil,
-						"status":    resStr.Status,
-						"firstflag": dt.itemNew.firstflag,
-					}).Debug("if dt.itemNew.firstflag == 0 {")
+					dt.Data.Log.Debug("if dt.itemNew.firstflag == 0 {")
 					if resStr.Status == "start" {
 						dt.itemNew.startTime = resStr.StartData.Time
-						dt.Data.Log.WithFields(logrus.Fields{
-							"package":   "determine",
-							"function":  "Summarysheet",
-							"status":    resStr.Status,
-							"firstflag": dt.itemNew.firstflag,
-						}).Debug("one!! if resStr.status == start")
+						dt.Data.Log.Debug("one!! if resStr.status == start")
 					}
 					if resStr.Status == "save" {
 						dt.itemNew.firstflag = 1
@@ -194,36 +145,15 @@ func (dt *Determine) Summarysheet() {
 						dt.itemNew.resSheet.Details = make([]nt.OperationOne, 1, 10)
 						dt.itemNew.resSheet.Sheet = resStr
 						dt.itemNew.resSheet.Details[0] = resStr
-						dt.Data.Log.WithFields(logrus.Fields{
-							"package":  "determine",
-							"function": "Summarysheet",
-							//	"error":    nil,
-							"status":    resStr.Status,
-							"firstflag": dt.itemNew.firstflag,
-						}).Debug("if resStr.status == save {")
+						dt.Data.Log.Debug("if resStr.status == save {")
 					}
 					continue
 				}
 				if dt.itemNew.firstflag == 1 {
-					dt.Data.Log.WithFields(logrus.Fields{
-						"package":  "determine",
-						"function": "Summarysheet",
-						//	"error":    nil,
-						"status":    resStr.Status,
-						"firstflag": dt.itemNew.firstflag,
-					}).Debug("if dt.itemNew.firstflag == 1 {")
+					dt.Data.Log.Debug("if dt.itemNew.firstflag == 1 {")
 					if resStr.Status == "start" {
-						len := len(dt.itemNew.resSheet.Details)
-						dt.Data.Log.WithFields(logrus.Fields{
-							"package":  "determine",
-							"function": "Summarysheet",
-							//	"error":    nil,
-							"status":           resStr.Status,
-							"firstflag":        dt.itemNew.firstflag,
-							"resSheet=":        dt.itemNew.resSheet.Sheet.Operaton,
-							"len Details":      len,
-							"last op details=": dt.itemNew.resSheet.Details[len-1].Operaton,
-						}).Debug("if resStr.status == start {")
+						//len := len(dt.itemNew.resSheet.Details)
+						dt.Data.Log.Debug("if resStr.status == start {")
 						if dt.itemNew.nextTime.flag == 0 {
 							dt.itemNew.nextTime.flag = 1
 							dt.itemNew.nextTime.start = resStr.StartData.Time
@@ -233,14 +163,7 @@ func (dt *Determine) Summarysheet() {
 						if (f1) || (f2) {
 							dt.itemNew.nextTime.flag = 0
 						}
-						dt.Data.Log.WithFields(logrus.Fields{
-							"package":  "determine",
-							"function": "Summarysheet",
-							//	"error":    nil,
-							"status":                resStr.Status,
-							"firstflag":             dt.itemNew.firstflag,
-							"itemNew.nextTime.flag": dt.itemNew.nextTime.flag,
-						}).Debug("if resStr.status == start { exit")
+						dt.Data.Log.Debug("if resStr.status == start { exit")
 					}
 					if resStr.Status == "save" {
 						dt.itemNew.sumItemDr = 0
@@ -249,51 +172,21 @@ func (dt *Determine) Summarysheet() {
 						}
 						if dt.itemNew.sumItemDr < dt.Data.Cfg.TimeIntervalAll {
 							dt.itemNew.resSheet.Details = append(dt.itemNew.resSheet.Details, resStr)
-							len := len(dt.itemNew.resSheet.Details)
-							//l.Println("save Details, len Details =", len, " last op details=", dt.itemNew.resSheet.Details[len-1].Operaton)
-							dt.Data.Log.WithFields(logrus.Fields{
-								"package":  "determine",
-								"function": "Summarysheet",
-								//	"error":    nil,
-								"status":                  resStr.Status,
-								"firstflag":               dt.itemNew.firstflag,
-								"len Details":             len,
-								" last operation details": dt.itemNew.resSheet.Details[len-1].Operaton,
-							}).Debug("add new Sheet.Details")
+							//len := len(dt.itemNew.resSheet.Details)
+							dt.Data.Log.Debug("add new Sheet.Details")
 							continue
 						}
 						len2 := len(dt.itemNew.resSheet.Details)
 						dt.itemNew.nextTime.flag = 0
 						dt.itemNew.resSheet.Sheet.StopData = dt.itemNew.resSheet.Details[len2-1].StopData
-						dt.Data.Log.WithFields(logrus.Fields{
-							"package":  "determine",
-							"function": "Summarysheet",
-							//	"error":    nil,
-							"status":                 resStr.Status,
-							"firstflag":              dt.itemNew.firstflag,
-							"Scape time":             dt.Data.ScapeData.Time.Format("15:04:05"),
-							"dur":                    strconv.Itoa(dt.itemNew.sumItemDr),
-							"TimeInterval for save=": strconv.Itoa(dt.Data.Cfg.TimeIntervalAll),
-							"newData":                resStr.Operaton,
-							"resSheet":               dt.itemNew.resSheet.Sheet.Operaton,
-						}).Debug("Save Sheet.Operaton - addSummaryStr(")
+						dt.Data.Log.Debug("Save Sheet.Operaton - addSummaryStr(")
 						dt.addSummaryStr(&dt.itemNew.resSheet)
 						dt.itemNew.resSheet.Sheet = resStr
 						dt.itemNew.resSheet.Details = nil
 						dt.itemNew.resSheet.Details = make([]nt.OperationOne, 1, 10)
 						dt.itemNew.resSheet.Details[0] = resStr
-						len3 := len(dt.itemNew.resSheet.Details)
-						dt.Data.Log.WithFields(logrus.Fields{
-							"package":  "determine",
-							"function": "Summarysheet",
-							//	"error":    nil,
-							"status":                  resStr.Status,
-							"firstflag":               dt.itemNew.firstflag,
-							"new start time:":         dt.itemNew.startTime,
-							"resSheet":                dt.itemNew.resSheet.Sheet.Operaton,
-							"len Details":             len3,
-							"last operation details=": dt.itemNew.resSheet.Details[len3-1].Operaton,
-						}).Debug("Start new Sheet.Operaton -before  addSummaryStr(")
+						//len3 := len(dt.itemNew.resSheet.Details)
+						dt.Data.Log.Debug("Start new Sheet.Operaton -before  addSummaryStr(")
 					}
 				}
 			}
@@ -308,10 +201,7 @@ func (dt *Determine) Run() {
 	var changeOp bool
 	dt.Data.ActiveOperation = -1
 	defer func() {
-		dt.Data.Log.WithFields(logrus.Fields{
-			"package":  "determine",
-			"function": "run",
-		}).Debug(" Done (defer)")
+		dt.Data.Log.Debug(" Done (defer)")
 		close(dt.Data.ScapeDataCh)
 		close(dt.Data.SteamCh)
 		close(dt.Data.ErrCh)
@@ -359,13 +249,7 @@ func (dt *Determine) Run() {
 							dt.saveoperation()
 
 						}
-						dt.Data.Log.WithFields(logrus.Fields{
-							"package":  "determine",
-							"function": "run",
-							//	"error":    nil,
-							"ActiveOperation": dt.Data.ActiveOperation,
-							"res":             res,
-						}).Debug(" after d.ActiveOperation = res")
+						dt.Data.Log.Debug(" after d.ActiveOperation = res")
 						d.ActiveOperation = res
 						if changeOp {
 							dt.addDatatooperation(0)
@@ -433,14 +317,7 @@ func (dt *Determine) startnewoperation() {
 	dt.Data.Temp.LastStartData = tempData
 	dt.Data.StartActiveOperation = tempData.Time
 	dt.Data.SteamCh <- dt.Data.OperationList[len(dt.Data.OperationList)-1]
-	dt.Data.Log.WithFields(logrus.Fields{
-		"package":  "determine",
-		"function": "startnewoperation",
-		//	"error":    nil,
-		"time":            dt.Data.ScapeData.Time.Format("15:04:05"),
-		"Operation":       dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation],
-		"ActiveOperation": strconv.Itoa(dt.Data.ActiveOperation),
-	}).Debug("Start operation")
+	dt.Data.Log.Debug("Start operation")
 }
 
 //
@@ -456,26 +333,14 @@ func (dt *Determine) saveoperation() {
 		//dt.Data.temp.FlagChangeTrip=0
 		dt.Data.OperationList[len-1].StopData = dt.Data.Temp.LastTripData
 		//l.Printf("FlagChangeTrip == 1")
-		dt.Data.Log.WithFields(logrus.Fields{
-			"package":  "determine",
-			"function": "saveoperation",
-			//	"error":    nil,
-			"FlagChangeTrip": dt.Data.Temp.FlagChangeTrip,
-		}).Debug("FlagChangeTrip == 1")
+		dt.Data.Log.Debug("FlagChangeTrip == 1")
 	} else {
 		dt.Data.OperationList[len-1].StopData = dt.Data.LastScapeData
 	}
 	dt.Data.OperationList[len-1].Status = "save"
 
 	dt.Data.SteamCh <- dt.Data.OperationList[len-1]
-	dt.Data.Log.WithFields(logrus.Fields{
-		"package":  "determine",
-		"function": "saveoperation",
-		//	"error":    nil,
-		"Temp time":       dt.Data.OperationList[len-1].StopData.Time.Format("15:04:05"),
-		"Save operation ": dt.Data.Cfg.Operationtype[dt.Data.ActiveOperation],
-		"ActiveOperation": strconv.Itoa(dt.Data.ActiveOperation),
-	}).Debug("Stop and save  operation")
+	dt.Data.Log.Debug("Stop and save  operation ")
 }
 func (dt *Determine) addSummaryStr(p *nt.SummarysheetT) {
 	//dt.mu.Lock()
@@ -561,15 +426,17 @@ func NewDetermine(ds *nt.DrillDataType, sm steam.SteamI) *Determine {
 	ds.ScapeDataCh = make(chan nt.ScapeDataD)
 	ds.ErrCh = make(chan error, 2)
 	ds.DoneCh = make(chan struct{})
+	ds.Done = make(chan struct{})
+
 	ds.DoneSummary = make(chan struct{})
 	ds.TimelimitCh = make(chan struct{})
 	ds.ActiveOperation = 1
 	ds.Mu = &sync.RWMutex{}
 	return &Determine{Data: ds,
-		wg:    &sync.WaitGroup{},
-		Mu:    &sync.RWMutex{},
+		wg: &sync.WaitGroup{},
+		//	Mu:    &sync.RWMutex{},
 		Steam: sm,
-		ListCheck: []DetermineOne{&Check0{}, &Check1{},
+		ListCheck: []determineOne{&Check0{}, &Check1{},
 			&Check2{}, &Check3{}, &Check4{}, &Check5{}, &Check7{}, &Check8{}, &Check9{}, &Check10{}},
 	}
 }
