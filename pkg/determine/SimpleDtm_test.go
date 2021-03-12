@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	_ "strconv"
 	"strings"
 	"testing"
 	"time"
 
-	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
+	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
 	"github.com/sirupsen/logrus"
 )
@@ -18,7 +19,7 @@ import (
 type SteamSmpl struct{}
 
 //function return simple fake ScapeDate for TestSimpleDtm
-func (St *SteamSmpl) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}) {
+func (St *SteamSmpl) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error) {
 	//nothing
 	v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	//flow data
@@ -50,8 +51,12 @@ func TestSteamCsv(t *testing.T) {
 	ScapeDataCh := make(chan nt.ScapeDataD)
 	DoneCh := make(chan struct{})
 	Done := make(chan struct{})
-	SteamCsv := &steam.SteamCsv{FilePath: "../../source/source.zip"}
-	go SteamCsv.Read(ScapeDataCh, DoneCh, Done)
+	ErrCh := make(chan error)
+	SteamCsv := &steam.SteamCsv{
+		FilePath: "../../source/source.zip",
+		Log:      createLog(logrus.DebugLevel),
+	}
+	go SteamCsv.Read(ScapeDataCh, DoneCh, Done, ErrCh)
 	fmt.Println("start test TestSteamCsv")
 	//data := []byte("Hello Bold!")
 	file, err := os.Create("operation.txt")
@@ -82,7 +87,7 @@ func TestSteamCsv(t *testing.T) {
 }
 
 func TestElementaryDtm(t *testing.T) {
-	fmt.Println("Start test TestElementaryDtm")
+	fmt.Printf("Start test TestElementaryDtm")
 	file, errf := os.Create("operation.txt")
 	if errf != nil {
 		t.Errorf("Unable to create file")
@@ -96,11 +101,13 @@ func TestElementaryDtm(t *testing.T) {
 		t.Fatal("not load config file")
 	}
 	sr := nt.DrillDataType{
-		Log: CLog(),
+		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
 
-	tm := NewDetermine(&sr, &steam.SteamCsv{FilePath: "../../source/source1.zip"})
+	tm := NewDetermine(&sr, &steam.SteamCsv{
+		FilePath: "../../source/source1.zip",
+		Log:      sr.Log})
 	//err := tm.Start(120)
 	dur, err := tm.Start(60)
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
@@ -173,7 +180,7 @@ func TestSimpleDtm(t *testing.T) {
 	}
 
 	sr := nt.DrillDataType{
-		Log: CLog(),
+		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
 
@@ -225,6 +232,36 @@ func CLog() *logrus.Logger {
 	log.SetFormatter(&logrus.JSONFormatter{})
 	log.Out = os.Stdout
 	file, err := os.OpenFile("logrus.log", os.O_CREATE|os.O_WRONLY, 0666)
+	if err == nil {
+		log.Out = file
+	} else {
+		log.Info("Failed to log to file, using default stderr")
+	}
+	return log
+
+}
+
+type plainFormatter struct {
+	TimestampFormat string
+	LevelDesc       []string
+}
+
+func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s \n", f.LevelDesc[entry.Level], timestamp,
+		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message)), nil
+}
+func createLog(ll logrus.Level) *logrus.Logger {
+
+	plainFormatter := new(plainFormatter)
+	plainFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	plainFormatter.LevelDesc = []string{"PANC", "FATL", "ERRO", "WARN", "INFO", "DEBG"}
+	var log = logrus.New()
+	log.SetReportCaller(true)
+	log.SetFormatter(plainFormatter)
+	log.SetLevel(ll)
+	log.Out = os.Stdout
+	file, err := os.OpenFile("logrus.log", os.O_CREATE, 0666) //|os.O_WRONLY
 	if err == nil {
 		log.Out = file
 	} else {

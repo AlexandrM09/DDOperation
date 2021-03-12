@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
+	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
 	"gopkg.in/yaml.v2"
 )
@@ -108,7 +108,7 @@ func (dt *Determine) Start(wt int) (time.Duration, error) {
 	go dt.Run()
 	//l.Println("Start determine")
 	dt.Data.Log.Debug(" Start Steam ")
-	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh, dt.Data.Done)
+	go dt.Steam.Read(dt.Data.ScapeDataCh, dt.Data.DoneCh, dt.Data.Done, dt.Data.ErrCh)
 	go dt.Summarysheet()
 	return dt.Wait() //nil
 }
@@ -132,7 +132,7 @@ func (dt *Determine) Summarysheet() {
 			}
 		case resStr = <-dt.Data.SteamCh:
 			{
-				dt.Data.Log.Debug("case resStr = <-dt.Data.steamCh:  status:%s", resStr.Status)
+				dt.Data.Log.Debugf("case resStr = <-dt.Data.steamCh:  status:%s", resStr.Status)
 				if dt.itemNew.firstflag == 0 {
 					dt.Data.Log.Debug("if dt.itemNew.firstflag == 0 {")
 					if resStr.Status == "start" {

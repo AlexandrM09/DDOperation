@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
 	dtm "github.com/AlexandrM09/DDOperation/pkg/determine"
+	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
 
 	logrus "github.com/sirupsen/logrus"
@@ -28,6 +28,7 @@ func main() {
 	tm := dtm.NewDetermine(&sr, &steam.SteamCsv{
 		FilePath:   "./source/source2.zip",
 		SatartTime: "___2019-05-25 17:52:43",
+		Log:        sr.Log,
 	})
 	dur, err := tm.Start(60)
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
@@ -57,8 +58,8 @@ type plainFormatter struct {
 
 func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
-	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s %v\n", f.LevelDesc[entry.Level], timestamp,
-		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message, entry.Data)), nil
+	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s \n", f.LevelDesc[entry.Level], timestamp,
+		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message)), nil
 }
 func createLog(ll logrus.Level) *logrus.Logger {
 

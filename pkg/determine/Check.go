@@ -6,7 +6,7 @@ import (
 	_ "math"
 	"time"
 
-	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
+	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 )
 
 /*

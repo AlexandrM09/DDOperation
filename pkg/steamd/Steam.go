@@ -6,29 +6,30 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+
 	"strconv"
 	"strings"
 	"time"
 
-	nt "github.com/AlexandrM09/DDOperation/pkg/Sharetype"
+	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
+	"github.com/sirupsen/logrus"
 )
 
 type (
 	//SteamI basic interface for operations recognition
 	SteamI interface {
-		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{})
+		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error)
 	}
 	//SteamI2 basic interface for operations recognition variant two
 	SteamI2 interface {
-		ReadCsv(Done chan struct{}) chan nt.ScapeDataD
+		ReadCsv(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD
 	}
 
 	//SteamRND test steam
 	SteamRND struct{}
 )
 
-func (St *SteamRND) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}) {
+func (St *SteamRND) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error) {
 	fmt.Println("RND")
 	return
 }
@@ -40,10 +41,11 @@ type SteamCsv struct {
 	tm         time.Time
 	bTime      bool
 	Dur        time.Duration
+	Log        *logrus.Logger
 }
 
 //ReadCsvTime steam SteamI2 for time
-func (St *SteamCsv) ReadCsvTime(Done chan struct{}) chan nt.ScapeDataD {
+func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
 	ScapeDataCh := make(chan nt.ScapeDataD)
 	ScapeDataChInside := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
@@ -55,7 +57,7 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}) chan nt.ScapeDataD {
 			close(DoneInside)
 		}()
 		// !!!!nead add new done chanel for exit St.Read
-		go St.Read(ScapeDataChInside, DoneInside, Done)
+		go St.Read(ScapeDataChInside, DoneInside, Done, ErrCh)
 		for {
 			select {
 			case <-timer1.C:
@@ -66,12 +68,17 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}) chan nt.ScapeDataD {
 					default:
 					}
 				}
+			//case <-ErrCh:
+			//	{
+			//		timer1.Stop()
+			//		return
+			//	}
 			case <-DoneInside:
 				{
 					timer1.Stop()
 					return
 				}
-
+			default:
 			}
 		}
 	}()
@@ -79,7 +86,7 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}) chan nt.ScapeDataD {
 }
 
 //ReadCsv steam SteamI2
-func (St *SteamCsv) ReadCsv(Done chan struct{}) chan nt.ScapeDataD {
+func (St *SteamCsv) ReadCsv(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
 	ScapeDataCh := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
 	go func() {
@@ -88,25 +95,26 @@ func (St *SteamCsv) ReadCsv(Done chan struct{}) chan nt.ScapeDataD {
 			close(DoneInside)
 		}()
 		// !!!!nead add new done chanel for exit St.Read
-		go St.Read(ScapeDataCh, DoneInside, Done)
+		go St.Read(ScapeDataCh, DoneInside, Done, ErrCh)
 		for {
 			select {
-
+			//case <-ErrCh:
+			//	return
 			case <-DoneInside:
 				return
-
+			default:
 			}
 		}
 	}()
 	return ScapeDataCh
 }
-func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, Done chan struct{}) {
+func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, Done chan struct{}, ErrCh chan error) {
 	defer func() {
 
 		DoneCh <- struct{}{}
 
 	}()
-
+	St.Log.Infof("Start steam from csv file path:%s", St.FilePath)
 	var err error
 	St.tm, err = time.Parse("2006-01-02 15:04:05", St.SatartTime)
 	St.bTime = err == nil
@@ -115,16 +123,20 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 	sH := scapeHeader{}
 	r, err := zip.OpenReader(St.FilePath) //"../source/source.zip"
 	if err != nil {
-		log.Fatal("unpacking zip file", err)
+		St.Log.Fatal("unpacking zip file path", err)
+		ErrCh <- err
+		return
 	}
 	defer r.Close()
 	csvFile := r.File[0]
 	rc, errf := csvFile.Open()
 	defer rc.Close()
 	if errf != nil {
-		log.Fatal("not open, ", errf)
+		St.Log.Fatal("not open file, ", errf)
+		ErrCh <- err
+		return
 	}
-	fmt.Printf("create new reader zip file:%s\n", St.FilePath)
+	St.Log.Infof("create new reader zip file:%s\n", St.FilePath)
 	reader := csv.NewReader(rc)
 	reader.Comma = ';'
 	n := 0
@@ -135,15 +147,16 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 		if error == io.EOF { //|| (n > 5)
 			break
 		} else if error != nil {
-
-			log.Fatal("read line, ", error)
+			St.Log.Fatal("read line, ", error)
+			ErrCh <- err
 		}
 		if n == 0 {
 			n = 1
 			err := parseheader(line, &sH)
 			if err != nil {
+				St.Log.Fatal("parse header, ", err)
+				ErrCh <- err
 
-				log.Fatal("parse header, ", err)
 			}
 			continue
 		}
