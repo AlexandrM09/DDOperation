@@ -1,0 +1,76 @@
+﻿
+# поднимать,подъем из скважины - pull out of hole (POOH) 
+#спускать в скважину, спуск - run in hole (RIH),lowering 
+#спуско-подъемные операции - round trips, runs (in hole)
+#наращивание - Making a connection
+#СПО - Making a trip
+#проработка - wiper trip
+#инструмент - tool(s),(буровой) drill string 
+#промывка - circulation
+Pmin: 10
+Flowmin: 4
+PresFlowCheck: 0
+Rotationmin: 7
+DephtTool: 0.01
+RotorSl: 1
+DirectionalCheck: 0
+BeforeDrillString: Работа т/с
+ShowParamRotSl: 1
+ShowParamCircl: 1
+ShowParamWiper: 1
+ChangeCircWiperfromDrill: 0
+Avgstand: 24.6
+Wbitmax: 13
+Pressmax: 257
+TimeIntervalAll: 90
+TimeIntervalMkTrip: 400
+TimeIntervalKNBK: 14400
+TimeIntervalMaxMkconn: 1200
+MinLenforTrip: 30
+Scapeparam:
+- Name: Глубина забоя
+  Gid: 101
+  Delta: 1
+- Name: Положение долота
+  Gid: 115
+  Delta: 1
+- Name: Давление на манифольде
+  Gid: 300
+  Delta: 2
+- Name: Расход на входе
+  Gid: 1001
+  Delta: 1
+- Name: Нагрузка на долото
+  Gid: 202
+  Delta: 1
+- Name: Вес на крюке
+  Gid: 200
+  Delta: 2
+- Name: Крутящий момент на роторе
+  Gid: 1300
+  Delta: 0.2
+- Name: Число оборотов ротора в мин.
+  Gid: 1200
+  Delta: 9
+- Name: Число свечей
+  Gid: 111
+  Delta: 0.1
+- Name: Положение долота по свечам
+  Gid: 110
+  Delta: 0.1
+Operationtype:
+- Бурение
+- Наращивание
+- Промывка
+- Проработка
+- Подъем
+- Спуск
+- Работа т/с
+- Бурение (ротор)
+- Бурение (слайд)
+- ПЗР
+- КНБК
+- ''
+- ''
+- ''
+- ''

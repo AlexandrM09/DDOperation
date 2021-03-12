@@ -52,8 +52,9 @@ func TestSteamCsv(t *testing.T) {
 	DoneCh := make(chan struct{})
 	Done := make(chan struct{})
 	ErrCh := make(chan error)
+
 	SteamCsv := &steam.SteamCsv{
-		FilePath: "../../source/source.zip",
+		FilePath: "./source.zip",
 		Log:      createLog(logrus.DebugLevel),
 	}
 	go SteamCsv.Read(ScapeDataCh, DoneCh, Done, ErrCh)
@@ -96,7 +97,7 @@ func TestElementaryDtm(t *testing.T) {
 	defer file.Close()
 
 	Cfg := nt.ConfigDt{}
-	errf = LoadConfigYaml("../../config.yaml", &Cfg)
+	errf = LoadConfigYaml("./config.yaml", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
@@ -106,7 +107,7 @@ func TestElementaryDtm(t *testing.T) {
 	}
 
 	tm := NewDetermine(&sr, &steam.SteamCsv{
-		FilePath: "../../source/source1.zip",
+		FilePath: "./source1.zip",
 		Log:      sr.Log})
 	//err := tm.Start(120)
 	dur, err := tm.Start(60)
@@ -174,7 +175,7 @@ func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start test TestSimpleDtm")
 
 	Cfg := nt.ConfigDt{}
-	errf := LoadConfigYaml("../../config.yaml", &Cfg)
+	errf := LoadConfigYaml("./config.yaml", &Cfg)
 	if errf != nil {
 		t.Fatal("not load config file")
 	}
