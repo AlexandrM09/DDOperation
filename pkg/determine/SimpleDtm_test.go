@@ -88,6 +88,9 @@ func TestSteamCsv(t *testing.T) {
 }
 
 func TestElementaryDtm(t *testing.T) {
+	//if testing.Short() {
+	t.Skip("skipping TestElementaryDtm_test in short mode")
+	//}
 	fmt.Printf("Start test TestElementaryDtm")
 	file, errf := os.Create("operation.txt")
 	if errf != nil {
