@@ -110,7 +110,7 @@ func TestElementaryDtm(t *testing.T) {
 		FilePath: "./source1.zip",
 		Log:      sr.Log})
 	//err := tm.Start(120)
-	dur, err := tm.Start(60)
+	dur, err := tm.Start(300)
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	//err := tm.Wait()
@@ -187,7 +187,7 @@ func TestSimpleDtm(t *testing.T) {
 
 	tm := NewDetermine(&sr, &SteamSmpl{})
 	//err := tm.Start(120)
-	dur, err := tm.Start(60)
+	dur, err := tm.Start(300)
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	//err := tm.Wait()

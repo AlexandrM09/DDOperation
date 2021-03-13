@@ -16,6 +16,7 @@ import (
 )
 
 func main() {
+
 	Cfg := nt.ConfigDt{}
 	errf := dtm.LoadConfigYaml("config.yaml", &Cfg)
 	if errf != nil {
@@ -26,11 +27,12 @@ func main() {
 		Cfg: &Cfg,
 	}
 	tm := dtm.NewDetermine(&sr, &steam.SteamCsv{
-		FilePath:   "./source/source2.zip",
-		SatartTime: "___2019-05-25 17:52:43",
-		Log:        sr.Log,
+		FilePath:  "./source/source1.zip",
+		StartTime: "___2019-05-25 17:52:43",
+		Log:       sr.Log,
 	})
-	dur, err := tm.Start(60)
+	fmt.Printf("Start determine operation\n")
+	dur, err := tm.Start(300)
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	if err != nil {

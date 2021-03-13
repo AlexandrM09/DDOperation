@@ -62,6 +62,7 @@ func (dt *Determine) Wait() (time.Duration, error) {
 	timer1 := time.NewTimer(time.Second * time.Duration(dt.waitTime))
 	go func(ch chan struct{}) {
 		dt.wg.Wait()
+		dt.Data.Log.Info("Wait() ch <- struct{}{} ")
 		ch <- struct{}{}
 
 	}(ch)
@@ -77,22 +78,24 @@ func (dt *Determine) Wait() (time.Duration, error) {
 
 			{
 				//
-				dt.Data.DoneCh <- struct{}{}
+				dt.Data.Log.Error(" time limit exceeded, dt.Data.Done <- struct{}{}")
+				dt.Data.Done <- struct{}{}
 
 				for {
 
 					select {
 					case <-ch:
 						{
+							dt.Data.Log.Error(" time limit exceeded,exit")
 							timer1.Stop()
 							nw1 := time.Now()
 							return nw1.Sub(dt.startTime), errors.New("time limit exceeded,normal output")
 						}
-
+					default:
 					}
 				}
 			}
-
+		default:
 		}
 	}
 
@@ -215,6 +218,8 @@ func (dt *Determine) Run() {
 		case <-d.DoneCh:
 			{
 				dt.saveoperation()
+				//dt.Data.Done <- struct{}{}
+				//<-dt.Data.DoneCh
 				dt.wg.Add(1)
 				dt.Data.DoneSummary <- struct{}{}
 

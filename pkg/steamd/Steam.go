@@ -36,12 +36,12 @@ func (St *SteamRND) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struc
 
 //SteamCsv Steam for csv example files
 type SteamCsv struct {
-	FilePath   string
-	SatartTime string
-	tm         time.Time
-	bTime      bool
-	Dur        time.Duration
-	Log        *logrus.Logger
+	FilePath  string
+	StartTime string
+	tm        time.Time
+	bTime     bool
+	Dur       time.Duration
+	Log       *logrus.Logger
 }
 
 //ReadCsvTime steam SteamI2 for time
@@ -112,11 +112,13 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 	defer func() {
 
 		DoneCh <- struct{}{}
-
+		St.Log.Info("Exit csv Steam")
 	}()
+
 	St.Log.Infof("Start steam from csv file path:%s", St.FilePath)
+	//time.Sleep(time.Second * 4)
 	var err error
-	St.tm, err = time.Parse("2006-01-02 15:04:05", St.SatartTime)
+	St.tm, err = time.Parse("2006-01-02 15:04:05", St.StartTime)
 	St.bTime = err == nil
 	//fmt.Printf("parse time=%v \n", St.bTime)
 	var ScapeData nt.ScapeDataD
@@ -141,6 +143,18 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 	reader.Comma = ';'
 	n := 0
 	for {
+		//====for exit
+		select {
+		case <-Done:
+			{
+				St.Log.Info("on-demand output csv Steam")
+				return
+			}
+		default:
+			{
+			}
+		}
+		//===========
 		if (n == 0) || (n%1000 == 0) {
 		}
 		line, error := reader.Read()
@@ -149,6 +163,7 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 		} else if error != nil {
 			St.Log.Fatal("read line, ", error)
 			ErrCh <- err
+			return
 		}
 		if n == 0 {
 			n = 1
@@ -156,12 +171,13 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 			if err != nil {
 				St.Log.Fatal("parse header, ", err)
 				ErrCh <- err
-
+				return
 			}
 			continue
 		}
 		err = nil
 		ScapeData.Time, err = getTime(line)
+		St.Log.Debugf("Read line %d, time:%s ", n, ScapeData.Time.Format("2006-01-02 15:04:05"))
 		if !(err == nil) {
 			continue
 		}
@@ -182,15 +198,7 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 		}
 		n++
 
-		select {
-		case <-Done:
-			{
-				return
-			}
-		default:
-			{
-			}
-		}
+		//time.Sleep(time.Millisecond * 100)
 	}
 	return
 }
