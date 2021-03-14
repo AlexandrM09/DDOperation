@@ -62,6 +62,7 @@ type (
 	OperationtypeD [15]string
 	//ScapeDataD time series data
 	ScapeDataD struct {
+		Id     string
 		Time   time.Time
 		Values [20]float32
 		/*0-Дата Время
