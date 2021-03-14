@@ -42,17 +42,19 @@ type SteamCsv struct {
 	bTime     bool
 	Dur       time.Duration
 	Log       *logrus.Logger
+	Id        string
+	Out       chan nt.ScapeDataD
 }
 
 //ReadCsvTime steam SteamI2 for time
 func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
-	ScapeDataCh := make(chan nt.ScapeDataD)
+	Out := make(chan nt.ScapeDataD)
 	ScapeDataChInside := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
 	timer1 := time.NewTimer(St.Dur)
 	go func() {
 		defer func() {
-			close(ScapeDataCh)
+			close(Out)
 			close(ScapeDataChInside)
 			close(DoneInside)
 		}()
@@ -63,7 +65,7 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.Sc
 			case <-timer1.C:
 				{
 					select {
-					case ScapeDataCh <- <-ScapeDataChInside:
+					case Out <- <-ScapeDataChInside:
 
 					default:
 					}
@@ -82,20 +84,20 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.Sc
 			}
 		}
 	}()
-	return ScapeDataCh
+	return Out
 }
 
 //ReadCsv steam SteamI2
 func (St *SteamCsv) ReadCsv(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
-	ScapeDataCh := make(chan nt.ScapeDataD)
+	Out := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
 	go func() {
 		defer func() {
-			close(ScapeDataCh)
+			close(Out)
 			close(DoneInside)
 		}()
 		// !!!!nead add new done chanel for exit St.Read
-		go St.Read(ScapeDataCh, DoneInside, Done, ErrCh)
+		go St.Read(Out, DoneInside, Done, ErrCh)
 		for {
 			select {
 			//case <-ErrCh:
@@ -106,7 +108,7 @@ func (St *SteamCsv) ReadCsv(Done chan struct{}, ErrCh chan error) chan nt.ScapeD
 			}
 		}
 	}()
-	return ScapeDataCh
+	return Out
 }
 func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, Done chan struct{}, ErrCh chan error) {
 	defer func() {
@@ -122,6 +124,7 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 	St.bTime = err == nil
 	//fmt.Printf("parse time=%v \n", St.bTime)
 	var ScapeData nt.ScapeDataD
+	ScapeData.Id = St.Id
 	sH := scapeHeader{}
 	r, err := zip.OpenReader(St.FilePath) //"../source/source.zip"
 	if err != nil {
