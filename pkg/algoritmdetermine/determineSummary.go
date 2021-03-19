@@ -11,8 +11,8 @@ type (
 
 	//SummarysheetT -type result list
 	SummarysheetT struct {
-		Sheet   OperationOne
-		Details []OperationOne
+		Sheet   nt.OperationOne
+		Details []nt.OperationOne
 		Log     *logrus.Logger
 		Cfg     *nt.ConfigDt
 		Temp    struct {

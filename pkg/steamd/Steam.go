@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 
 	"strconv"
 	"strings"
@@ -22,7 +23,8 @@ type (
 	}
 	//SteamI2 basic interface for operations recognition variant two
 	SteamI2 interface {
-		ReadCsv(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD
+		ReadSteam(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD
+		ReadSteamTime(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD
 	}
 
 	//SteamRND test steam
@@ -44,10 +46,11 @@ type SteamCsv struct {
 	Log       *logrus.Logger
 	Id        string
 	Out       chan nt.ScapeDataD
+	Wg        *sync.WaitGroup
 }
 
 //ReadCsvTime steam SteamI2 for time
-func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
+func (St *SteamCsv) ReadSteamTime(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
 	Out := make(chan nt.ScapeDataD)
 	ScapeDataChInside := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
@@ -60,6 +63,7 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.Sc
 		}()
 		// !!!!nead add new done chanel for exit St.Read
 		go St.Read(ScapeDataChInside, DoneInside, Done, ErrCh)
+		St.Wg.Add(1)
 		for {
 			select {
 			case <-timer1.C:
@@ -78,6 +82,7 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.Sc
 			case <-DoneInside:
 				{
 					timer1.Stop()
+					St.Wg.Done()
 					return
 				}
 			default:
@@ -88,7 +93,7 @@ func (St *SteamCsv) ReadCsvTime(Done chan struct{}, ErrCh chan error) chan nt.Sc
 }
 
 //ReadCsv steam SteamI2
-func (St *SteamCsv) ReadCsv(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
+func (St *SteamCsv) ReadSteam(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
 	Out := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
 	go func() {
