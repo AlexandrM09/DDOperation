@@ -3,24 +3,24 @@ package algoritmdetermine
 import (
 	"time"
 
-	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
+	nt1 "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 	"github.com/sirupsen/logrus"
 )
 
 type (
 
 	//SummarysheetT -type result list
-	SummarysheetT struct {
-		Sheet   nt.OperationOne
-		Details []nt.OperationOne
+	SummarysheetT2 struct {
+		Sheet   nt1.OperationOne
+		Details []nt1.OperationOne
 		Log     *logrus.Logger
-		Cfg     *nt.ConfigDt
+		Cfg     *nt1.ConfigDt
 		Temp    struct {
 			LastToolDepht     float32
 			LastTimeToolDepht time.Time
 			StartDepht        float32
-			LastStartData     ScapeDataD
-			LastTripData      ScapeDataD
+			LastStartData     nt1.ScapeDataD
+			LastTripData      nt1.ScapeDataD
 			FlagChangeTrip    int
 		}
 	}

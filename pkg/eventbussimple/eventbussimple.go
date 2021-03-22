@@ -2,6 +2,7 @@ package eventbussimple
 
 import (
 	_ "fmt"
+	"sync"
 	_ "time"
 	//	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
 )
@@ -16,6 +17,7 @@ type (
 		Save      map[string]event
 		Determine map[string]event
 		Summary   map[string]event
+		mu        sync.RWMutex
 	}
 )
 
@@ -38,6 +40,8 @@ func (Ev *Eventbus) AddWell(id string, chanelbufcount int) {
 
 //Send
 func (Ev *Eventbus) Send(evt string, id string, val interface{}) {
+	defer Ev.mu.Unlock()
+	Ev.mu.Lock()
 	switch evt {
 	case "ScapeData":
 		{
@@ -84,6 +88,8 @@ func (Ev *Eventbus) Send(evt string, id string, val interface{}) {
 
 //Receive
 func (Ev *Eventbus) Receive(evt string, id string) interface{} {
+	defer Ev.mu.Unlock()
+	Ev.mu.Lock()
 	var ch event
 	var ok bool
 	switch evt {
@@ -134,6 +140,7 @@ func Neweventbussimple(countwell int) *Eventbus {
 		Save:      make(map[string]event, countwell),
 		Determine: make(map[string]event, countwell),
 		Summary:   make(map[string]event, countwell),
+		mu:        sync.RWMutex{},
 	}
 }
 

@@ -47,6 +47,7 @@ type SteamCsv struct {
 	Id        string
 	Out       chan nt.ScapeDataD
 	Wg        *sync.WaitGroup
+	IdOut     string
 }
 
 //ReadCsvTime steam SteamI2 for time
@@ -103,12 +104,16 @@ func (St *SteamCsv) ReadSteam(Done chan struct{}, ErrCh chan error) chan nt.Scap
 		}()
 		// !!!!nead add new done chanel for exit St.Read
 		go St.Read(Out, DoneInside, Done, ErrCh)
+		St.Wg.Add(1)
 		for {
 			select {
 			//case <-ErrCh:
 			//	return
 			case <-DoneInside:
-				return
+				{
+					St.Wg.Done()
+					return
+				}
 			default:
 			}
 		}
