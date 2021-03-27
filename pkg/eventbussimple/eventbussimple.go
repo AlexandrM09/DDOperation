@@ -17,7 +17,7 @@ type (
 		Save      map[string]event
 		Determine map[string]event
 		Summary   map[string]event
-		mu        sync.RWMutex
+		mu        *sync.RWMutex
 	}
 )
 
@@ -134,13 +134,13 @@ func (Ev *Eventbus) Receive(evt string, id string) interface{} {
 }
 
 //Neweventbussimple constructor
-func Neweventbussimple(countwell int) *Eventbus {
+func Neweventbussimple(count int) *Eventbus {
 	return &Eventbus{
-		ScapeData: make(map[string]event, countwell),
-		Save:      make(map[string]event, countwell),
-		Determine: make(map[string]event, countwell),
-		Summary:   make(map[string]event, countwell),
-		mu:        sync.RWMutex{},
+		ScapeData: make(map[string]event, count),
+		Save:      make(map[string]event, count),
+		Determine: make(map[string]event, count),
+		Summary:   make(map[string]event, count),
+		mu:        &sync.RWMutex{},
 	}
 }
 

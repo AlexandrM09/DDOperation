@@ -39,7 +39,7 @@ type (
 		//Mu                   *sync.RWMutex
 		Wg    *sync.WaitGroup
 		Cfg   *nt.ConfigDt
-		evnt  *bus.Eventbus
+		Evnt  *bus.Eventbus
 		IdIn  string //pub name in busevent
 		IdOut string //pub name in busevent
 		Id    string
@@ -124,7 +124,8 @@ func (d *DetermineElementary) startnewoperation() {
 	d.data.Temp.LastStartData = tempData
 	d.data.StartActiveOperation = tempData.Time //
 	dtmp := d.data.OperationList[len(d.data.OperationList)-1]
-	d.evnt.Send("Determine", d.Id, &dtmp)
+	d.Log.Debugf("Send Determine id=%s,time=%s,Op=%s", d.Id, dtmp.StartData.Time.Format("15:04"), dtmp.Operaton)
+	d.Evnt.Send("Determine", d.Id, &dtmp)
 	//	d.data.SteamCh <- dt.Data.OperationList[len(dt.Data.OperationList)-1]
 	d.Log.Debug("Start operation")
 }
@@ -145,16 +146,19 @@ func (d *DetermineElementary) saveoperation() {
 		d.data.OperationList[len-1].StopData = d.data.LastScapeData
 	}
 	d.data.OperationList[len-1].Status = "save"
+
 	dtmp := d.data.OperationList[len-1]
-	d.evnt.Send("Determine", d.Id, &dtmp)
+	d.Log.Debugf("Send Determine id=%s,time=%s,Op=%s", d.Id, dtmp.StartData.Time.Format("15:04"), dtmp.Operaton)
+	d.Evnt.Send("Determine", d.Id, &dtmp)
 	d.Log.Debug("Stop and save  operation ")
 }
 func (d *DetermineElementary) Read(DoneCh chan struct{}, Done chan struct{}, ErrCh chan error) {
 	defer func() {
 
 		DoneCh <- struct{}{}
-		d.Log.Info("Exit read DetermineElementary")
+		d.Log.Infof("Exit read DetermineElementary id=%s", d.Id)
 	}()
+	d.Log.Infof("Start Run DetEl id=%s", d.Id)
 	//init
 	var res int
 	var changeOp bool
@@ -178,7 +182,8 @@ func (d *DetermineElementary) Read(DoneCh chan struct{}, Done chan struct{}, Err
 			}
 		}
 		//read data
-		ii2 := d.evnt.Receive("ScapeData", d.Id)
+		ii2 := d.Evnt.Receive("ScapeData", d.Id)
+	//	d.Log.Infof("Read ScapeData id=%s,ii2=%v", d.Id, ii2)
 		if ii2 == nil {
 			continue
 		}
@@ -188,6 +193,7 @@ func (d *DetermineElementary) Read(DoneCh chan struct{}, Done chan struct{}, Err
 		if !ok {
 			continue
 		}
+		d.Log.Infof("after parse ScapeData id=%s", d.Id)
 		if d.data.ActiveOperation >= 0 {
 			res, changeOp = d.ListCheck[checkInt[d.data.ActiveOperation]].Check(d)
 		} else {
