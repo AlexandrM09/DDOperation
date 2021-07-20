@@ -27,9 +27,12 @@ type (
 	}
 	Wells    = []Well
 	PoolWell struct {
-		wells *Wells
-		Log   *logrus.Logger
-		Cfg   *nt.ConfigDt
+		wells     *Wells
+		Log       *logrus.Logger
+		Cfg       *nt.ConfigDt
+		Steams    arStmI //steam.SteamCsv
+		Evnt      *bus.Eventbus
+		detElmtrs arDeEl
 	}
 	rrobin = struct {
 		n    int
@@ -43,7 +46,7 @@ type (
 )
 
 const (
-	countwell              = 3
+	countwell              = 1
 	countWellRepoSave      = 3
 	countDetermiElementary = 3
 	countDetermiSummary    = 3
@@ -69,53 +72,99 @@ func (pW *PoolWell) Building(path string, durat int) error {
 		return err
 	}
 	//EvetBus create
-	evnt := bus.Neweventbussimple(countwell)
+	pW.Evnt = bus.Neweventbussimple(countwell, pW.Log)
+
 	//Make Steam array
-	var steams arStmI //steam.SteamCsv
-	buildSteam(&steams, pW.wells, pW.Log, durat, countwell)
-	pW.Log.Infof("after build Steam: %v\n", steams)
-	for i, _ := range steams {
-		p := steams[i]
+	buildSteam(&pW.Steams, pW.wells, pW.Log, durat, countwell)
+	pW.Log.Infof("after build Steam: %v\n", pW.Steams)
+	for i, _ := range pW.Steams {
+		p := pW.Steams[i]
 		pW.Log.Infof("evnt.AddWell:%d,%v\n", i, p)
-		evnt.AddWell(p.(*steam.SteamCsv).Id, 50) // 50 - read buffer (chanel)
+		pW.Evnt.AddWell(p.(*steam.SteamCsv).Id, 100) // 50 - read buffer (chanel)
 	}
+
+	buildDetermineEl(&pW.detElmtrs, pW.Log, pW.Cfg, pW.Evnt, durat, countDetermiElementary)
+	fmt.Printf("Exit Building \n")
+	return nil
+}
+func (pW *PoolWell) Run() error {
 	//StaemDataCh := make(chan nt.ScapeDataD, countwell)
 	ErrSteam := make(chan error, countwell)
 	DoneSteam := make(chan struct{}, countwell)
 	//Start csv steam
-	runSteam(&steams, DoneSteam, ErrSteam, evnt, countwell)
-	//
-	var detElmtrs arDeEl
-	buildDetermineEl(&detElmtrs, pW.Log, pW.Cfg, evnt, durat, countDetermiElementary)
-	ErrEl := make(chan error, countDetermiElementary)
-	DoneEl := make(chan struct{}, countDetermiElementary)
-	runDetermineEl(detElmtrs, DoneEl, ErrEl, evnt, countDetermiElementary)
-	//Waiting end SteamCsv
-	for i := 0; i < countwell; i++ {
-		steams[i].(*steam.SteamCsv).Wg.Wait()
-	}
-	for i := 0; i < countDetermiElementary; i++ {
-		detElmtrs[i].(*detElem.DetermineElementary).Wg.Wait()
-	}
-	fmt.Scanln()
-	pW.Log.Infof("After wait ")
-	for i := 0; i < countwell; i++ {
-		id := steams[i].(*steam.SteamCsv).Id
-		pW.Log.Infof("result Well:%s:\n", id)
-		b := true
-		for b {
-			t := evnt.Receive("Determine", id)
-			if t == nil {
-				b = false
-				continue
+	runSteam(&pW.Steams, DoneSteam, ErrSteam, pW.Evnt, countwell)
+	to := time.After(3 * time.Second)
+	done := make(chan bool, 1)
+	fmt.Printf("Start run \n")
+
+	go func() {
+
+		for {
+			//time.Sleep(2 * time.Millisecond)
+			select {
+			case <-to:
+				DoneSteam <- struct{}{}
+				done <- true
+				return
+			case err := <-ErrSteam:
+				pW.Log.Errorf("Error", err)
+			default:
+				for i := 0; i < countwell; i++ {
+					id := pW.Steams[i].(*steam.SteamCsv).Id
+
+					if t, ok2 := pW.Evnt.Receive("ScapeData", id); ok2 {
+
+						d, ok3 := t.(*nt.ScapeDataD)
+						if ok3 {
+							pW.Log.Debugf("Run:Read ScapeData id=%s,count=%d,t=%s", id, d.Count, d.Time.Format("2006-01-02 15:04:05"), d.Values[3])
+
+							fmt.Printf("Id=%s,count=%d, read time=%s,val=%.3f \n", id, d.Count, d.Time.Format("2006-01-02 15:04:05"), d.Values[3])
+
+						}
+						//id = ""
+						//d.Count = 0
+						//ok2 = false
+						//ok3 = false
+						//t = nil
+					}
+				}
 			}
-			d, ok := t.(nt.OperationOne)
-			if !ok {
-				pW.Log.Errorf("not OperationOne interface:%v", t)
-			}
-			pW.Log.Infof("Result:", FormatSheet(d))
 		}
-	}
+	}()
+	fmt.Printf("expectation gorooting \n")
+	<-done
+	fmt.Printf("the program has been successfully completed \n")
+	/*
+		ErrEl := make(chan error, countDetermiElementary)
+		DoneEl := make(chan struct{}, countDetermiElementary)
+		runDetermineEl(pW.detElmtrs, DoneEl, ErrEl, pW.Evnt, countDetermiElementary)
+		//Waiting end SteamCsv
+		//	for i := 0; i < countwell; i++ {
+		//		pW.Steams[i].(*steam.SteamCsv).Wg.Wait()
+		//	}
+		for i := 0; i < countDetermiElementary; i++ {
+			pW.detElmtrs[i].(*detElem.DetermineElementary).Wg.Wait()
+		}
+		fmt.Scanln()
+		pW.Log.Infof("After wait ")
+		for i := 0; i < countwell; i++ {
+			id := pW.Steams[i].(*steam.SteamCsv).Id
+			pW.Log.Infof("result Well:%s:\n", id)
+			b := true
+			for b {
+				t := pW.Evnt.Receive("Determine", id)
+				if t == nil {
+					b = false
+					continue
+				}
+				d, ok := t.(nt.OperationOne)
+				if !ok {
+					pW.Log.Errorf("not OperationOne interface:%v", t)
+				}
+				pW.Log.Infof("Result:", FormatSheet(d))
+			}
+		}
+	*/
 	/*	robin := &Roundrobin{
 			countclients: countwell,
 			countworker:  countDetermiElementary,
@@ -126,7 +175,6 @@ func (pW *PoolWell) Building(path string, durat int) error {
 	*/
 	return nil
 }
-
 func FormatSheet(Op nt.OperationOne) string {
 	//	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	//	dur := sh.Sheet.StopData.Time.Sub(sh.Sheet.StartData.Time)
@@ -161,9 +209,9 @@ func buildSteam(steams *arStmI, arwells *Wells, l *logrus.Logger, durat int, cou
 		steams[i] = &steam.SteamCsv{
 			Id:       id1,
 			FilePath: (*arwells)[i].path,
-			Dur:      time.Second * time.Duration(durat), // max time duration reading
+			Dur:      time.Millisecond * time.Duration(durat), // max time duration reading
 			Log:      l,
-			Wg:       &sync.WaitGroup{},
+			//Wg:       &sync.WaitGroup{},
 		}
 	}
 	fmt.Printf("buildSteam: %v\n", *steams)
@@ -172,33 +220,61 @@ func buildSteam(steams *arStmI, arwells *Wells, l *logrus.Logger, durat int, cou
 func runSteam(steams *arStmI,
 	DoneSteam chan struct{}, ErrSteam chan error, evnt *bus.Eventbus, count int) {
 	for i := 0; i < count; i++ {
-		n := i
+		//n := i
 		go func(k int) {
 			steams[k].(*steam.SteamCsv).Log.Infof("Start Steam id=%s", steams[k].(*steam.SteamCsv).Id)
 			//steams[i].(*steam.SteamCsv).ScapeDataCh = steams[k].ReadCsv(DoneSteam, ErrSteam)
 			for v := range steams[k].ReadSteam(DoneSteam, ErrSteam) {
-
-				evnt.Send("ScapeData", steams[k].(*steam.SteamCsv).Id, &v)
-				steams[k].(*steam.SteamCsv).Log.Debugf("after sending ScapeData id=%s,op=%s", steams[k].(*steam.SteamCsv).Id, v.Time)
-				//evnt.Send("Determine", steams[i].(*steam.SteamCsv).Id, &v)
-				//arwells[k].Data <- v
-				//to-do check ErrSteam
+				//St.Log.Debugf("id=%s sending in chanel line %d, time:%s ", St.Id, n, ScapeData.Time.Format("2006-01-02 15:04:05"))
+				value := v
+				for !evnt.Send("ScapeData", steams[k].(*steam.SteamCsv).Id, &value) {
+					//time.Sleep(100 * time.Microsecond)
+					steams[k].(*steam.SteamCsv).Log.Debugf("runSteam lock: id=%s sending in steem line %d, time:%s", steams[k].(*steam.SteamCsv).Id, v.Count, v.Time)
+				}
+				steams[k].(*steam.SteamCsv).Log.Debugf("runSteam: id=%s sending in steem line %d, time:%s", steams[k].(*steam.SteamCsv).Id, v.Count, v.Time)
 			}
-		}(n)
+		}(i)
 	}
 }
 func buildDetermineEl(detElmtrs *arDeEl,
 	l *logrus.Logger, Cf *nt.ConfigDt, evnt *bus.Eventbus, durat int, count int) {
+
 	for i := 0; i < count; i++ {
+
 		detElmtrs[i] = &detElem.DetermineElementary{
-			Log:   l,
-			Wg:    &sync.WaitGroup{},
-			Cfg:   Cf,
+			Log: l,
+			Wg:  &sync.WaitGroup{},
+			Cfg: Cf,
+			/*				Pmin:                     Cf.Pmin,
+				Flowmin:                  Cf.Flowmin,
+				Rotationmin:              Cf.Rotationmin,
+				PresFlowCheck:            Cf.PresFlowCheck,
+				DephtTool:                Cf.DephtTool,
+				RotorSl:                  Cf.RotorSl,
+				DirectionalCheck:         Cf.DirectionalCheck,
+				BeforeDrillString:        Cf.BeforeDrillString,
+				ShowParamRotSl:           Cf.ShowParamRotSl,
+				ShowParamCircl:           Cf.ShowParamCircl,
+				ShowParamWiper:           Cf.ShowParamWiper,
+				ChangeCircWiperfromDrill: Cf.ChangeCircWiperfromDrill,
+				Avgstand:                 Cf.Avgstand,
+				Wbitmax:                  Cf.Wbitmax,
+				Pressmax:                 Cf.Pressmax,
+				TimeIntervalAll:          Cf.TimeIntervalAll,
+				TimeIntervalMkTrip:       Cf.TimeIntervalMkTrip,
+				TimeIntervalMaxMkconn:    Cf.TimeIntervalMaxMkconn,
+				TimeIntervalKNBK:         Cf.TimeIntervalKNBK,
+				MinLenforTrip:            Cf.MinLenforTrip,
+				ScapeParam:               Cf.ScapeParam,
+				Operationtype:            Cf.Operationtype,
+			},
+			*/
 			IdIn:  "ScapeData",
-			IdOut: "DetermineDetermine",
-			Id:    fmt.Sprintf("%d", i),
+			IdOut: "Determine",
+			Id:    fmt.Sprintf("%d", i+11),
 			Evnt:  evnt,
 		}
+		//	detElmtrs[i].(*detElem.DetermineElementary).Cfg = *Cf
 	}
 }
 func runDetermineEl(El [countDetermiElementary]detElem.DetermineElementaryI2,
@@ -226,6 +302,7 @@ func LoadWell(count int) (awells *Wells, er error) {
 			})
 	}
 	//awells = &t
+
 	t[0].path = "source/source.zip"
 	t[1].path = "source/source1.zip"
 	t[2].path = "source/source2.zip"
@@ -278,7 +355,7 @@ func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 //
 func createLog(ll logrus.Level) *logrus.Logger {
 	plainFormatter := new(plainFormatter)
-	plainFormatter.TimestampFormat = "2006-01-02 15:04:05"
+	plainFormatter.TimestampFormat = "2006-01-02 15:04:05.000"
 	plainFormatter.LevelDesc = []string{"PANC", "FATL", "ERRO", "WARN", "INFO", "DEBG"}
 	var log = logrus.New()
 	log.SetReportCaller(true)
