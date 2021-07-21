@@ -27,7 +27,7 @@ func main() {
 		Cfg: &Cfg,
 	}
 	tm := dtm.NewDetermine(&sr, &steam.SteamCsv{
-		FilePath:  "./source/source1.zip",
+		FilePath:  "./source/source2.zip",
 		StartTime: "___2019-05-25 17:52:43",
 		Log:       sr.Log,
 	})

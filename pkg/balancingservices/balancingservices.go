@@ -46,7 +46,7 @@ type (
 )
 
 const (
-	countwell              = 1
+	countwell              = 3
 	countWellRepoSave      = 3
 	countDetermiElementary = 3
 	countDetermiSummary    = 3

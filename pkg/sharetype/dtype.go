@@ -64,7 +64,9 @@ type (
 	ScapeDataD struct {
 		Id     string
 		Time   time.Time
+		Count  int
 		Values [20]float32
+
 		/*0-Дата Время
 		  1-Время Дата
 		  2=Глубина забоя

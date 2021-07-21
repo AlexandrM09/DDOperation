@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	_ "fmt"
 	_ "log"
 	_ "os"
@@ -13,4 +14,6 @@ import (
 func main() {
 	pool := &alg.PoolWell{}
 	pool.Building("config.yaml", 60)
+	fmt.Printf("cli run \n")
+	pool.Run()
 }

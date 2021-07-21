@@ -64,9 +64,9 @@ func (d *DetermineElementary) Run(Done chan struct{}, ErrCh chan error) {
 		defer func() {
 			close(DoneInside)
 		}()
-
-		go d.Read(DoneInside, Done, ErrCh)
 		d.Wg.Add(1)
+		go d.Read(DoneInside, Done, ErrCh)
+
 		for {
 			select {
 			//case <-ErrCh:
@@ -162,7 +162,7 @@ func (d *DetermineElementary) Read(DoneCh chan struct{}, Done chan struct{}, Err
 	//init
 	var res int
 	var changeOp bool
-	var ok bool
+	//var ok bool
 	d.data.ActiveOperation = -1
 	var temp1 *nt.ScapeDataD
 	// num interface check
@@ -182,9 +182,9 @@ func (d *DetermineElementary) Read(DoneCh chan struct{}, Done chan struct{}, Err
 			}
 		}
 		//read data
-		ii2 := d.Evnt.Receive("ScapeData", d.Id)
-	//	d.Log.Infof("Read ScapeData id=%s,ii2=%v", d.Id, ii2)
-		if ii2 == nil {
+		ii2, ok := d.Evnt.Receive("ScapeData", d.Id)
+		//	d.Log.Infof("Read ScapeData id=%s,ii2=%v", d.Id, ii2)
+		if !ok {
 			continue
 		}
 
@@ -193,7 +193,7 @@ func (d *DetermineElementary) Read(DoneCh chan struct{}, Done chan struct{}, Err
 		if !ok {
 			continue
 		}
-		d.Log.Infof("after parse ScapeData id=%s", d.Id)
+		d.Log.Infof("after parse ScapeData id=%s,", d.Id)
 		if d.data.ActiveOperation >= 0 {
 			res, changeOp = d.ListCheck[checkInt[d.data.ActiveOperation]].Check(d)
 		} else {
@@ -234,7 +234,7 @@ func (d *DetermineElementary) Read(DoneCh chan struct{}, Done chan struct{}, Err
 				if changeOp {
 					changeOp = false
 				}
-				d.startnewoperation()
+				//d.startnewoperation()
 			}
 
 		}
