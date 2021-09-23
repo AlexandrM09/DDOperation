@@ -50,6 +50,8 @@ const (
 	countWellRepoSave      = 3
 	countDetermiElementary = 3
 	countDetermiSummary    = 3
+	countReadBufferChanel  = 1000
+	timeleave              = 1
 )
 
 func (pW *PoolWell) Building(path string, durat int) error {
@@ -80,9 +82,8 @@ func (pW *PoolWell) Building(path string, durat int) error {
 	for i, _ := range pW.Steams {
 		p := pW.Steams[i]
 		pW.Log.Infof("evnt.AddWell:%d,%v\n", i, p)
-		pW.Evnt.AddWell(p.(*steam.SteamCsv).Id, 100) // 50 - read buffer (chanel)
+		pW.Evnt.AddWell(p.(*steam.SteamCsv).Id, countReadBufferChanel) // 50 - read buffer (chanel)
 	}
-
 	buildDetermineEl(&pW.detElmtrs, pW.Log, pW.Cfg, pW.Evnt, durat, countDetermiElementary)
 	fmt.Printf("Exit Building \n")
 	return nil
@@ -93,10 +94,10 @@ func (pW *PoolWell) Run() error {
 	DoneSteam := make(chan struct{}, countwell)
 	//Start csv steam
 	runSteam(&pW.Steams, DoneSteam, ErrSteam, pW.Evnt, countwell)
-	to := time.After(3 * time.Second)
+	to := time.After(timeleave * time.Second)
 	done := make(chan bool, 1)
 	fmt.Printf("Start run \n")
-
+	var aCount [countwell]int
 	go func() {
 
 		for {
@@ -118,7 +119,8 @@ func (pW *PoolWell) Run() error {
 						if ok3 {
 							pW.Log.Debugf("Run:Read ScapeData id=%s,count=%d,t=%s", id, d.Count, d.Time.Format("2006-01-02 15:04:05"), d.Values[3])
 
-							fmt.Printf("Id=%s,count=%d, read time=%s,val=%.3f \n", id, d.Count, d.Time.Format("2006-01-02 15:04:05"), d.Values[3])
+							aCount[i] = d.Count
+							//fmt.Printf("Id=%s,count=%d, read time=%s,val=%.3f \n", id, d.Count, d.Time.Format("2006-01-02 15:04:05"), d.Values[3])
 
 						}
 						//id = ""
@@ -133,7 +135,12 @@ func (pW *PoolWell) Run() error {
 	}()
 	fmt.Printf("expectation gorooting \n")
 	<-done
+	fmt.Printf("Count =%d \n", countReadBufferChanel)
+	for i := 0; i < countwell; i++ {
+		fmt.Printf("Id=%d,speed=%d \n", i, aCount[i]/timeleave)
+	}
 	fmt.Printf("the program has been successfully completed \n")
+
 	/*
 		ErrEl := make(chan error, countDetermiElementary)
 		DoneEl := make(chan struct{}, countDetermiElementary)
