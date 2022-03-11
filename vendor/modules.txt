@@ -1,0 +1,20 @@
+# github.com/kr/pretty v0.1.0
+## explicit
+# github.com/magefile/mage v1.10.0
+github.com/magefile/mage/mg
+github.com/magefile/mage/sh
+# github.com/sirupsen/logrus v1.8.0
+## explicit
+github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.4.0
+## explicit
+# golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c
+## explicit
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/unix
+golang.org/x/sys/windows
+# gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15
+## explicit
+# gopkg.in/yaml.v2 v2.4.0
+## explicit
+gopkg.in/yaml.v2
