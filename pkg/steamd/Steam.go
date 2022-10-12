@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sync"
 
 	"strconv"
 	"strings"
@@ -20,11 +21,7 @@ type (
 	SteamI interface {
 		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error)
 	}
-	//SteamI2 basic interface for operations recognition variant two
-	SteamI2 interface {
-		ReadSteam(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD
-		ReadSteamTime(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD
-	}
+	
 
 	//SteamRND test steam
 	SteamRND struct{}
@@ -45,24 +42,33 @@ type SteamCsv struct {
 	Log       *logrus.Logger
 	Id        string
 	Out       chan nt.ScapeDataD
-	//	Wg        *sync.WaitGroup
+	Wg        *sync.WaitGroup
 	IdOut string
+	done chan struct{}
 }
-
+//Stop..
+func (St *SteamCsv) Stop(){
+	St.done<-struct{}{}
+	St.Wg.Wait()
+}
 //ReadCsvTime steam SteamI2 for time
-func (St *SteamCsv) ReadSteamTime(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
+func (St *SteamCsv) ReadSteamTime(ErrCh chan error) chan nt.ScapeDataD {
 	Out := make(chan nt.ScapeDataD)
 	ScapeDataChInside := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
+	St.done= make(chan struct{})
 	timer1 := time.NewTimer(St.Dur)
+	St.Wg.Add(1)
 	go func() {
 		defer func() {
 			close(Out)
 			close(ScapeDataChInside)
 			close(DoneInside)
+			close(St.done)
+			St.Wg.Done()
 		}()
 		// !!!!nead add new done chanel for exit St.Read
-		go St.Read(ScapeDataChInside, DoneInside, Done, ErrCh)
+		go St.Read(ScapeDataChInside, DoneInside, St.done, ErrCh)
 		//St.Wg.Add(1)
 		for {
 			select {
@@ -93,16 +99,19 @@ func (St *SteamCsv) ReadSteamTime(Done chan struct{}, ErrCh chan error) chan nt.
 }
 
 //ReadCsv steam SteamI2
-func (St *SteamCsv) ReadSteam(Done chan struct{}, ErrCh chan error) chan nt.ScapeDataD {
+func (St *SteamCsv) ReadSteam(ErrCh chan error) chan nt.ScapeDataD {
 	Out := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
+	St.done= make(chan struct{})
 	go func() {
 		defer func() {
 			close(Out)
 			close(DoneInside)
+			close(St.done)
+			St.Wg.Done()
 		}()
 		// !!!!nead add new done chanel for exit St.Read
-		go St.Read(Out, DoneInside, Done, ErrCh)
+		go St.Read(Out, DoneInside, St.done, ErrCh)
 		//St.Wg.Add(1)
 		for {
 			select {

@@ -30,20 +30,7 @@ type (
 		startTime time.Time
 		waitTime  int
 		//	Mu        *sync.RWMutex
-		itemNew struct {
-			resSheet  nt.SummarysheetT
-			firstflag int
-			startflag int
-			startTime time.Time
-			//stopTime  time.Time
-			sumItemDr int
-			//res       OperationOne
-			//next     nt.OperationOne
-			nextTime struct {
-				flag  int
-				start time.Time
-			}
-		}
+		itemNew nt.ResultSheet
 	}
 )
 
@@ -124,70 +111,70 @@ func (dt *Determine) Summarysheet() {
 		case <-dt.Data.DoneSummary:
 			{
 
-				len2 := len(dt.itemNew.resSheet.Details)
+				len2 := len(dt.itemNew.ResSheet.Details)
 				dt.Data.Log.Debug("done and save operation")
 				//dt.mu.Lock()
 				//defer dt.mu.Unlock()
-				dt.itemNew.resSheet.Sheet.StopData = dt.itemNew.resSheet.Details[len2-1].StopData
-				dt.addSummaryStr(&dt.itemNew.resSheet)
+				dt.itemNew.ResSheet.Sheet.StopData = dt.itemNew.ResSheet.Details[len2-1].StopData
+				dt.addSummaryStr(&dt.itemNew.ResSheet)
 				dt.wg.Done()
 				return
 			}
 		case resStr = <-dt.Data.SteamCh:
 			{
 				dt.Data.Log.Debugf("case resStr = <-dt.Data.steamCh:  status:%s", resStr.Status)
-				if dt.itemNew.firstflag == 0 {
+				if dt.itemNew.Firstflag == 0 {
 					dt.Data.Log.Debug("if dt.itemNew.firstflag == 0 {")
 					if resStr.Status == "start" {
-						dt.itemNew.startTime = resStr.StartData.Time
+						dt.itemNew.StartTime = resStr.StartData.Time
 						dt.Data.Log.Debug("one!! if resStr.status == start")
 					}
 					if resStr.Status == "save" {
-						dt.itemNew.firstflag = 1
-						dt.itemNew.sumItemDr = 0
-						dt.itemNew.resSheet.Details = make([]nt.OperationOne, 1, 10)
-						dt.itemNew.resSheet.Sheet = resStr
-						dt.itemNew.resSheet.Details[0] = resStr
+						dt.itemNew.Firstflag = 1
+						dt.itemNew.SumItemDr = 0
+						dt.itemNew.ResSheet.Details = make([]nt.OperationOne, 1, 10)
+						dt.itemNew.ResSheet.Sheet = resStr
+						dt.itemNew.ResSheet.Details[0] = resStr
 						dt.Data.Log.Debug("if resStr.status == save {")
 					}
 					continue
 				}
-				if dt.itemNew.firstflag == 1 {
+				if dt.itemNew.Firstflag == 1 {
 					dt.Data.Log.Debug("if dt.itemNew.firstflag == 1 {")
 					if resStr.Status == "start" {
 						//len := len(dt.itemNew.resSheet.Details)
 						dt.Data.Log.Debug("if resStr.status == start {")
-						if dt.itemNew.nextTime.flag == 0 {
-							dt.itemNew.nextTime.flag = 1
-							dt.itemNew.nextTime.start = resStr.StartData.Time
+						if dt.itemNew.NextTime.Flag == 0 {
+							dt.itemNew.NextTime.Flag = 1
+							dt.itemNew.NextTime.Start = resStr.StartData.Time
 						}
-						f1 := resStr.Operaton == dt.itemNew.resSheet.Sheet.Operaton
-						f2 := ((resStr.Operaton == dt.Data.Cfg.Operationtype[9]) && (dt.itemNew.resSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[4]) || (dt.itemNew.resSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[5]))
+						f1 := resStr.Operaton == dt.itemNew.ResSheet.Sheet.Operaton
+						f2 := ((resStr.Operaton == dt.Data.Cfg.Operationtype[9]) && (dt.itemNew.ResSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[4]) || (dt.itemNew.ResSheet.Sheet.Operaton == dt.Data.Cfg.Operationtype[5]))
 						if (f1) || (f2) {
-							dt.itemNew.nextTime.flag = 0
+							dt.itemNew.NextTime.Flag = 0
 						}
 						dt.Data.Log.Debug("if resStr.status == start { exit")
 					}
 					if resStr.Status == "save" {
-						dt.itemNew.sumItemDr = 0
-						if dt.itemNew.nextTime.flag == 1 {
-							dt.itemNew.sumItemDr = int(resStr.StopData.Time.Sub(dt.itemNew.nextTime.start).Seconds())
+						dt.itemNew.SumItemDr = 0
+						if dt.itemNew.NextTime.Flag == 1 {
+							dt.itemNew.SumItemDr = int(resStr.StopData.Time.Sub(dt.itemNew.NextTime.Start).Seconds())
 						}
-						if dt.itemNew.sumItemDr < dt.Data.Cfg.TimeIntervalAll {
-							dt.itemNew.resSheet.Details = append(dt.itemNew.resSheet.Details, resStr)
+						if dt.itemNew.SumItemDr < dt.Data.Cfg.TimeIntervalAll {
+							dt.itemNew.ResSheet.Details = append(dt.itemNew.ResSheet.Details, resStr)
 							//len := len(dt.itemNew.resSheet.Details)
 							dt.Data.Log.Debug("add new Sheet.Details")
 							continue
 						}
-						len2 := len(dt.itemNew.resSheet.Details)
-						dt.itemNew.nextTime.flag = 0
-						dt.itemNew.resSheet.Sheet.StopData = dt.itemNew.resSheet.Details[len2-1].StopData
+						len2 := len(dt.itemNew.ResSheet.Details)
+						dt.itemNew.NextTime.Flag = 0
+						dt.itemNew.ResSheet.Sheet.StopData = dt.itemNew.ResSheet.Details[len2-1].StopData
 						dt.Data.Log.Debug("Save Sheet.Operaton - addSummaryStr(")
-						dt.addSummaryStr(&dt.itemNew.resSheet)
-						dt.itemNew.resSheet.Sheet = resStr
-						dt.itemNew.resSheet.Details = nil
-						dt.itemNew.resSheet.Details = make([]nt.OperationOne, 1, 10)
-						dt.itemNew.resSheet.Details[0] = resStr
+						dt.addSummaryStr(&dt.itemNew.ResSheet)
+						dt.itemNew.ResSheet.Sheet = resStr
+						dt.itemNew.ResSheet.Details = nil
+						dt.itemNew.ResSheet.Details = make([]nt.OperationOne, 1, 10)
+						dt.itemNew.ResSheet.Details[0] = resStr
 						//len3 := len(dt.itemNew.resSheet.Details)
 						dt.Data.Log.Debug("Start new Sheet.Operaton -before  addSummaryStr(")
 					}
