@@ -21,7 +21,6 @@ type (
 	SteamI interface {
 		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error)
 	}
-	
 
 	//SteamRND test steam
 	SteamRND struct{}
@@ -29,34 +28,59 @@ type (
 
 func (St *SteamRND) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error) {
 	fmt.Println("RND")
-	return
+	
 }
 
-//SteamCsv Steam for csv example files
+// SteamCsv Steam for csv example files
 type SteamCsv struct {
-	FilePath  string
-	StartTime string
-	tm        time.Time
-	bTime     bool
-	Dur       time.Duration
-	Log       *logrus.Logger
-	Id        string
-	Out       chan nt.ScapeDataD
-	Wg        *sync.WaitGroup
-	IdOut string
-	done chan struct{}
+	FilePath    string
+	StartTime   string
+	tm          time.Time
+	bTime       bool
+	Dur         time.Duration
+	Log         *logrus.Logger
+	Id          string
+	Out         chan nt.ScapeDataD
+	Wg          *sync.WaitGroup
+	IdOut       string
+	done        chan struct{}
+	start       time.Time
+	alldataread bool
 }
-//Stop..
-func (St *SteamCsv) Stop(){
-	St.done<-struct{}{}
+
+// Stop..
+func (St *SteamCsv) Stop() {
+	defer close(St.done)
+	St.Log.Debug("send  done chanel ", St.Id)
+	if St.alldataread {
+		return
+	}
+	St.done <- struct{}{}
 	St.Wg.Wait()
+
 }
-//ReadCsvTime steam SteamI2 for time
+func New(id string, filePath string,
+	dur time.Duration, // max time duration reading
+	l *logrus.Logger,
+	Wg *sync.WaitGroup) *SteamCsv {
+
+	return &SteamCsv{
+		Id:          id,
+		FilePath:    filePath,
+		Dur:         dur, // max time duration reading
+		Log:         l,
+		Wg:          Wg,
+		Out:         make(chan nt.ScapeDataD),
+		done:        make(chan struct{}),
+		alldataread: false,
+	}
+}
+
+// ReadCsvTime steam SteamI2 for time
 func (St *SteamCsv) ReadSteamTime(ErrCh chan error) chan nt.ScapeDataD {
 	Out := make(chan nt.ScapeDataD)
 	ScapeDataChInside := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
-	St.done= make(chan struct{})
 	timer1 := time.NewTimer(St.Dur)
 	St.Wg.Add(1)
 	go func() {
@@ -64,8 +88,9 @@ func (St *SteamCsv) ReadSteamTime(ErrCh chan error) chan nt.ScapeDataD {
 			close(Out)
 			close(ScapeDataChInside)
 			close(DoneInside)
-			close(St.done)
 			St.Wg.Done()
+			St.Log.Debug("WTF Before close done chanel ", St.Id)
+
 		}()
 		// !!!!nead add new done chanel for exit St.Read
 		go St.Read(ScapeDataChInside, DoneInside, St.done, ErrCh)
@@ -98,43 +123,44 @@ func (St *SteamCsv) ReadSteamTime(ErrCh chan error) chan nt.ScapeDataD {
 	return Out
 }
 
-//ReadCsv steam SteamI2
+// ReadCsv steam SteamI2
 func (St *SteamCsv) ReadSteam(ErrCh chan error) chan nt.ScapeDataD {
 	Out := make(chan nt.ScapeDataD)
 	DoneInside := make(chan struct{})
-	St.done= make(chan struct{})
+	St.Log.Debug("After Steam make done chanel ", St.Id)
+	St.Wg.Add(1)
 	go func() {
 		defer func() {
 			close(Out)
 			close(DoneInside)
-			close(St.done)
+			St.Log.Debug("defer main steam  func", St.Id)
+
 			St.Wg.Done()
+
 		}()
 		// !!!!nead add new done chanel for exit St.Read
 		go St.Read(Out, DoneInside, St.done, ErrCh)
 		//St.Wg.Add(1)
-		for {
-			select {
-			//case <-ErrCh:
-			//	return
-			case <-DoneInside:
-				{
-					//	St.Wg.Done()
-					return
-				}
-			default:
+
+		 <-DoneInside
+			{
+				//	St.Wg.Done()
+				St.Log.Debug("After DoneInside reading ", St.Id)
+				St.Log.Debug("exit main steam  func ", St.Id)
+				return
 			}
-		}
+		
+
 	}()
 	return Out
 }
 func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, Done chan struct{}, ErrCh chan error) {
 	defer func() {
-
+		St.Log.Info("Exit csv Steam ", St.Id, ", total working time(s):", time.Since(St.start).Seconds())
 		DoneCh <- struct{}{}
-		St.Log.Info("Exit csv Steam")
-	}()
 
+	}()
+	St.start = time.Now()
 	St.Log.Infof("Start steam from csv file path:%s", St.FilePath)
 	//time.Sleep(time.Second * 4)
 	var err error
@@ -211,12 +237,12 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 		ScapeData.Count = n
 		if St.bTime {
 			if ScapeData.Time.Sub(St.tm) > 0 {
-				St.Log.Debugf("id=%s sending in chanel line %d, time:%s ", St.Id, n, ScapeData.Time.Format("2006-01-02 15:04:05"))
+				// St.Log.Debugf("id=%s sending in chanel line %d, time:%s ", St.Id, n, ScapeData.Time.Format("2006-01-02 15:04:05"))
 				ScapeDataCh <- ScapeData
 
 			}
 		} else {
-			St.Log.Debugf("2variant id=%s sending in chanel line %d, time:%s ", St.Id, n, ScapeData.Time.Format("2006-01-02 15:04:05"))
+			// St.Log.Debugf("2variant id=%s sending in chanel line %d, time:%s ", St.Id, n, ScapeData.Time.Format("2006-01-02 15:04:05"))
 			ScapeDataCh <- ScapeData
 
 		}
@@ -224,10 +250,11 @@ func (St *SteamCsv) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, D
 
 		//time.Sleep(time.Millisecond * 100)
 	}
+	St.alldataread = true
+	St.Log.Info("All Data read ", St.Id, ", total working time(s):", time.Since(St.start).Seconds())
 	return
 }
 
-//
 type scapeHeader [20]int
 
 // parse csv header
@@ -252,7 +279,7 @@ func findColumn(sourceString string, record []string) int {
 	return 0
 }
 
-//return time from csv
+// return time from csv
 func GetTime(record []string) (time.Time, error) {
 	//func Date(year int, month Month, day, hour, min, sec, nsec int, loc *Location) Time
 	if len(record) < 3 {

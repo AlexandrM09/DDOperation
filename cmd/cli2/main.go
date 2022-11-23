@@ -13,7 +13,8 @@ import (
 
 func main() {
 	pool := &alg.PoolWell{}
-	pool.Building("config.yaml", 60)
+	pool.Building("config.yaml", 3)
 	fmt.Printf("cli run \n")
 	pool.Run()
+	fmt.Printf("programm exit \n")
 }

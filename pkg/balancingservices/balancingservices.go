@@ -30,7 +30,7 @@ type (
 		//ReadTime(Done chan struct{}, ErrCh chan error)
 		Stop() map[string]detElem.SaveDetElementary
 	}
-	arDeEl = [countDetermiElementary]DetermineElementaryI2
+	// arDeEl = [countDetermiElementary]DetermineElementaryI2
 	Well   = struct {
 		Id         string
 		name       string
@@ -64,7 +64,7 @@ const (
 	countDetermiElementary = 3
 	countDetermiSummary    = 3
 	countReadBufferChanel  = 1000
-	timeleave              = 1
+	timeleave              = 3
 )
 
 func (pW *PoolWell) Building(path string, durat int) error {
@@ -78,7 +78,7 @@ func (pW *PoolWell) Building(path string, durat int) error {
 	//Load Well
 	pW.wells, err = LoadWell(countwell)
 	for i, _ := range *pW.wells {
-		pW.Log.Infof("well i:%d,id:%d\n", i, (*pW.wells)[i].Id)
+		pW.Log.Infof("well i:%d,id:%s\n", i, (*pW.wells)[i].Id)
 	}
 	if err != nil {
 		pW.Log.Fatal("Error loading the wells information")
@@ -93,15 +93,17 @@ func (pW *PoolWell) Building(path string, durat int) error {
 
 	pW.Log.Infof("after build Steam: %v\n", pW.Steams)
 	e := detElem.DetermineElementary{
-		Log:   pW.Log,
-		Wg:    &sync.WaitGroup{},
-		Cfg:   pW.Cfg,
-		In:    "ScapeData",
-		Out:   []string{"Determine"},
-		Id:    map[string]int{},
-		Store: pW.Store,
+		Log:       pW.Log,
+		Wg:        &sync.WaitGroup{},
+		Cfg:       pW.Cfg,
+		In:        "ScapeData",
+		Out:       []string{"Determine"},
+		DataMapId: make(map[string]detElem.SaveDetElementary),
+		Id:        make(map[string]int),
+		Store:     pW.Store,
 	}
 	for _, v := range *pW.wells {
+		pW.Log.Infof("before e.AddWell(v.Id),id:%s\n", v.Id)
 		e.AddWell(v.Id)
 	}
 	pW.detElmtr = &e
@@ -120,94 +122,61 @@ func (pW *PoolWell) Run() error {
 		// close(DoneSteam)
 		// close(DoneEl)
 		// close(ErrEl)
-		for _, v := range pW.Steams {
-			v.Stop()
+		for k, _ := range pW.Steams {
+			pW.Steams[k].Stop()
 		}
-		pW.detElmtr.Stop()
-		pW.Store.CloseBrockerChanel()
+		fmt.Printf("after Run defer func() 1 \n")
+		// pW.Steams[0].Stop()
 
+		pW.detElmtr.Stop()
+		fmt.Printf("after Run defer func() 2 \n")
+		pW.Store.CloseBrockerChanel()
+		fmt.Printf("after Run defer func() \n")
+		pW.Log.Info("after Run defer func()")
 	}()
 
 	go pW.detElmtr.Run(ErrSteam)
 	to := time.After(timeleave * time.Second)
-	done := make(chan bool, 1)
+	doneAllSteam := make(chan struct{}, 1)
 	fmt.Printf("Start run \n")
-	var aCount [countwell]int
+	// var aCount [countwell]int
+	//waiting for the reading to finish steam
 	go func() {
-
-		for {
-			//time.Sleep(2 * time.Millisecond)
-			select {
-			case <-to:
-
-				done <- true
-				return
-			case err := <-ErrSteam:
-				pW.Log.Errorf("Error", err)
-			default:
-				// for i := 0; i < countwell; i++ {
-				// 	id := pW.Steams[i].(*steam.SteamCsv).Id
-
-				// 	if t, ok2 := pW.Evnt.Receive("ScapeData", id); ok2 {
-
-				// 		d, ok3 := t.(*nt.ScapeDataD)
-				// 		if ok3 {
-				// 			pW.Log.Debugf("Run:Read ScapeData id=%s,count=%d,t=%s", id, d.Count, d.Time.Format("2006-01-02 15:04:05"), d.Values[3])
-
-				// 			aCount[i] = d.Count
-				// 			//fmt.Printf("Id=%s,count=%d, read time=%s,val=%.3f \n", id, d.Count, d.Time.Format("2006-01-02 15:04:05"), d.Values[3])
-
-				// 		}
-				// 		//id = ""
-				// 		//d.Count = 0
-				// 		//ok2 = false
-				// 		//ok3 = false
-				// 		//t = nil
-				// 	}
-				// }
-			}
-		}
+		pW.WgSteam.Wait()
+		doneAllSteam <- struct{}{}
+		fmt.Printf("cahnel doneAllSteam sending \n")
+		pW.Log.Info("cahnel doneAllSteam sending")
 	}()
-	fmt.Printf("expectation gorooting \n")
-	// <-done
-	pW.WgSteam.Wait()
-	fmt.Printf("Count =%d \n", countReadBufferChanel)
-	for i := 0; i < countwell; i++ {
-		fmt.Printf("Id=%d,speed=%d \n", i, aCount[i]/timeleave)
-	}
-	fmt.Printf("the program has been successfully completed \n")
 
-	/*
-		ErrEl := make(chan error, countDetermiElementary)
-		DoneEl := make(chan struct{}, countDetermiElementary)
-		runDetermineEl(pW.detElmtrs, DoneEl, ErrEl, pW.Evnt, countDetermiElementary)
-		//Waiting end SteamCsv
-		//	for i := 0; i < countwell; i++ {
-		//		pW.Steams[i].(*steam.SteamCsv).Wg.Wait()
-		//	}
-		for i := 0; i < countDetermiElementary; i++ {
-			pW.detElmtrs[i].(*detElem.DetermineElementary).Wg.Wait()
-		}
-		fmt.Scanln()
-		pW.Log.Infof("After wait ")
-		for i := 0; i < countwell; i++ {
-			id := pW.Steams[i].(*steam.SteamCsv).Id
-			pW.Log.Infof("result Well:%s:\n", id)
-			b := true
-			for b {
-				t := pW.Evnt.Receive("Determine", id)
-				if t == nil {
-					b = false
-					continue
-				}
-				d, ok := t.(nt.OperationOne)
-				if !ok {
-					pW.Log.Errorf("not OperationOne interface:%v", t)
-				}
-				pW.Log.Infof("Result:", FormatSheet(d))
+	//time.Sleep(2 * time.Millisecond)
+	for {
+		select {
+		case <-to:
+			{
+				fmt.Printf("the time limit is exhausted \n")
+				pW.Log.Info("the time limit is exhausted")
+				// break
+				fmt.Printf("the program has been successfully completed \n")
+				pW.Log.Info("the program has been successfully completed")
+
+				return nil
 			}
+		case <-doneAllSteam:
+			{
+				fmt.Printf("cahnel doneAllSteam reding \n")
+				pW.Log.Info("cahnel doneAllSteam reding")
+				// break
+				fmt.Printf("the program has been successfully completed \n")
+				pW.Log.Info("the program has been successfully completed")
+
+				return nil
+			}
+		case err := <-ErrSteam:
+			pW.Log.Errorf("Error", err)
+
 		}
-	*/
+	}
+
 	/*	robin := &Roundrobin{
 			countclients: countwell,
 			countworker:  countDetermiElementary,
@@ -249,13 +218,12 @@ func buildSteam(steams *arStmI, arwells *Wells, l *logrus.Logger, durat int, cou
 	for i := 0; i < count; i++ {
 		id1 := (*arwells)[i].Id
 		fmt.Printf("buildSteam id1:%s\n", id1)
-		steams[i] = &steam.SteamCsv{
-			Id:       id1,
-			FilePath: (*arwells)[i].pathsource,
-			Dur:      time.Millisecond * time.Duration(durat), // max time duration reading
-			Log:      l,
-			Wg:       &sync.WaitGroup{},
-		}
+		steams[i] = steam.New(
+			id1,
+			(*arwells)[i].pathsource,
+			time.Second*time.Duration(durat), // max time duration reading
+			l,
+			&sync.WaitGroup{})
 	}
 	//return
 	fmt.Printf("buildSteam: %v\n", *steams)
@@ -265,16 +233,13 @@ func runSteam(steams *arStmI, ErrSteam chan error, Store *store.Brocker, count i
 		//n := i
 		wg.Add(1)
 		go func(k int) {
-			steams[k].(*steam.SteamCsv).Log.Infof("Start Steam id=%s", steams[k].(*steam.SteamCsv).Id)
-			//steams[i].(*steam.SteamCsv).ScapeDataCh = steams[k].ReadCsv(DoneSteam, ErrSteam)
+			// steams[k].(*steam.SteamCsv).Log.Infof("Start Steam id=%s, number=%d", steams[k].(*steam.SteamCsv).Id, k)
+
 			for v := range steams[k].ReadSteam(ErrSteam) {
-				//St.Log.Debugf("id=%s sending in chanel line %d, time:%s ", St.Id, n, ScapeData.Time.Format("2006-01-02 15:04:05"))
+
 				value := v
-				for Store.Send("ScapeData", steams[k].(*steam.SteamCsv).Id, &value) {
-					//time.Sleep(100 * time.Microsecond)
-					// steams[k].(*steam.SteamCsv).Log.Debugf("runSteam lock: id=%s sending in steem line %d, time:%s", steams[k].(*steam.SteamCsv).Id, v.Count, v.Time)
-				}
-				steams[k].(*steam.SteamCsv).Log.Debugf("runSteam: id=%s sending in steem line %d, time:%s", steams[k].(*steam.SteamCsv).Id, v.Count, v.Time)
+				Store.Send("ScapeData", steams[k].(*steam.SteamCsv).Id, &value)
+				// steams[k].(*steam.SteamCsv).Log.Debugf("runSteam: id=%s sending in steem line %d, time:%s", steams[k].(*steam.SteamCsv).Id, v.Count, v.Time)
 			}
 			wg.Done()
 		}(i)

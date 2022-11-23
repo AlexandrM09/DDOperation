@@ -43,7 +43,7 @@ type (
 		In    string   //pub name in busevent
 		Out   []string //pub name in busevent
 		//id скважин должны быть добавлены до старта,
-		// в процессе работы скважины с текущей архитектурой добавлять нальзя
+		// в процессе работы скважины с текущей архитектурой добавлять нeльзя
 		Id   map[string]int
 		done chan struct{}
 	}
@@ -197,7 +197,7 @@ func (d *DetermineElementary) Read(DoneInside chan struct{}, Done chan struct{},
 				}
 			}
 			//read data
-			g := d.Store.Receive("ScapeData", id)
+			g := d.Store.Receive(d.In, id) //"ScapeData"
 			//	d.Log.Infof("Read ScapeData id=%s,ii2=%v", d.Id, ii2)
 			if g == nil {
 				continue

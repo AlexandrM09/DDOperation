@@ -124,6 +124,7 @@ func (dt *Determine) Summarysheet() {
 			{
 				dt.Data.Log.Debugf("case resStr = <-dt.Data.steamCh:  status:%s", resStr.Status)
 				if dt.itemNew.Firstflag == 0 {
+					//Самая первая операция в списке
 					dt.Data.Log.Debug("if dt.itemNew.firstflag == 0 {")
 					if resStr.Status == "start" {
 						dt.itemNew.StartTime = resStr.StartData.Time
