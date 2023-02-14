@@ -61,6 +61,7 @@ type (
 	*/
 	OperationtypeD [15]string
 	//ScapeDataD time series data
+	// golang CRUD with gin and ent
 	ScapeDataD struct {
 		Id     string
 		Time   time.Time

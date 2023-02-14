@@ -2,7 +2,6 @@ package StoreMap
 
 import (
 	_ "errors"
-	"fmt"
 	_ "fmt"
 	"sync"
 	_ "time"
@@ -18,11 +17,12 @@ const (
 )
 
 type (
-	Topic = struct {
-		mu    *sync.RWMutex
-		Value map[string]chan interface{}
-	}
-	Partition = map[string]Topic
+	// Topic = struct {
+	// 	mu       *sync.RWMutex
+	// 	Value    map[string]chan interface{}
+	// 	flagFull bool
+	// }
+	Toppic = map[string]Topic
 	Brocker   struct {
 		Log        *logrus.Logger
 		count      int
@@ -37,7 +37,8 @@ func New(log *logrus.Logger) *Brocker {
 	b := Brocker{Log: log,
 		count:      chanelbufcount,
 		Partitions: make(Partition, 6),
-		mu:         &sync.RWMutex{}}
+		mu:         &sync.RWMutex{},
+	}
 	b.Partitions["Sensors data save"] = Topic{
 		Value: make(map[string]chan interface{}, wellcount),
 		mu:    &sync.RWMutex{}}
@@ -67,13 +68,27 @@ func (b *Brocker) Send(partition string, id string, val interface{}) bool {
 	v, ok := t.Value[id]
 	if !ok {
 		t.mu.Lock()
+
 		t.Value[id] = make(chan interface{}, chanelbufcount)
 		v, ok = t.Value[id]
+		if !ok {
+			return false
+		}
 		t.mu.Unlock()
-		fmt.Printf("broker Send partition=%s,id =%s,ok=%v\n", partition, id, ok)
+		// fmt.Printf("broker Send partition=%s,id =%s,ok=%v\n", partition, id, ok)
+	}
+	if len(v) == cap(v) {
+		// if !t.flagFull {
+		// 	b.Log.Debugf("partition %s topicid=%s is full \n", partition, id)
+		// 	t.flagFull = true
+		// 	b.Partitions[partition] = t
+		// }
+		b.Log.Debugf("partition %s topicid=%s is full \n", partition, id)
+		return false
 	}
 	v <- val
-	fmt.Printf("broker Send return=%s,id =%s,data=%v\n", partition, id, v)
+	t.flagFull = false
+	// fmt.Printf("broker Send return=%s,id =%s,data=%v\n", partition, id, v)
 	return true
 }
 func (b *Brocker) Receive(partition string, id string) interface{} {
@@ -83,18 +98,24 @@ func (b *Brocker) Receive(partition string, id string) interface{} {
 		return nil
 	}
 
-	t.mu.Lock()
+	//t.mu.Lock()
 	v, ok := t.Value[id]
-	t.mu.Unlock()
+	//t.mu.Unlock()
 	if !ok {
 		return nil
 	}
-	val, ok := <-v
-	if !ok {
-		fmt.Printf("broker Read partition=%s,id =%s is nil\n", partition, id)
+	var val interface{}
+
+	select {
+	case val, ok = <-v:
+	default:
 		return nil
 	}
-	fmt.Printf("broker Read partition=%s,id =%s,data = %v\n", partition, id, val)
+	if !ok {
+		// fmt.Printf("broker Read partition=%s,id =%s is nil\n", partition, id)
+		return nil
+	}
+	// fmt.Printf("broker Read partition=%s,id =%s,data = %v\n", partition, id, val)
 	return val
 }
 func (b *Brocker) CloseBrockerChanel() {

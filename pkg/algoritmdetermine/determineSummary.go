@@ -3,7 +3,7 @@ package algoritmdetermine
 import (
 	"fmt"
 	"sync"
-	"time"
+	_ "time"
 
 	StoreMap "github.com/AlexandrM09/DDOperation/pkg/StoreMap"
 	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
@@ -13,19 +13,19 @@ import (
 type (
 
 	//SummarysheetT -type result list
-	SummaryCalcT struct {
-		Sheet   nt.OperationOne
-		Details []nt.OperationOne
+	// SummaryCalcT struct {
+	// 	Sheet   nt.OperationOne
+	// 	Details []nt.OperationOne
 
-		Temp struct {
-			LastToolDepht     float32
-			LastTimeToolDepht time.Time
-			StartDepht        float32
-			LastStartData     nt.ScapeDataD
-			LastTripData      nt.ScapeDataD
-			FlagChangeTrip    int
-		}
-	}
+	// 	Temp struct {
+	// 		LastToolDepht     float32
+	// 		LastTimeToolDepht time.Time
+	// 		StartDepht        float32
+	// 		LastStartData     nt.ScapeDataD
+	// 		LastTripData      nt.ScapeDataD
+	// 		FlagChangeTrip    int
+	// 	}
+	// }
 	SummaryResult struct {
 		Summarysheet []nt.SummarysheetT
 		Sc           nt.ResultSheet
@@ -41,8 +41,9 @@ type (
 		Out   []string //pub name in busevent
 		//id скважин должны быть добавлены до старта,
 		// в процессе работы скважины с текущей архитектурой добавлять нeльзя
-		Id   map[string]int
-		done chan struct{}
+		Id       map[string]int
+		done     chan struct{}
+		stateRun bool //true=runing,false=stop
 	}
 )
 
@@ -66,13 +67,28 @@ func (d *DetermineSummarys) AddWell(id string) {
 
 	}
 }
+
+// Принудительная остановка
 func (d *DetermineSummarys) Stop() map[string]SummaryResult {
+	// defer close(d.done)
+	if d.stateRun {
+		d.done <- struct{}{}
+	}
+
+	// d.Wg.Wait()
+	return d.DataMapId
+}
+
+// Ожидание пока хотябы в одной скважине поступают данные
+func (d *DetermineSummarys) Wait() map[string]SummaryResult {
 	defer close(d.done)
-	d.done <- struct{}{}
+	// d.done <- struct{}{}
 	d.Wg.Wait()
 	return d.DataMapId
 }
+
 func (d *DetermineSummarys) Run(ErrCh chan error) {
+	d.stateRun = true
 	d.done = make(chan struct{})
 	DoneInside := make(chan struct{})
 	go func() {
@@ -85,14 +101,14 @@ func (d *DetermineSummarys) Run(ErrCh chan error) {
 			//	return
 			case <-DoneInside:
 				{
+					d.stateRun = false
 					d.Wg.Done()
 					return
 				}
-			default:
 			}
 		}
 	}()
-	return
+
 }
 func (d *DetermineSummarys) Read(DoneInside chan struct{}, ErrCh chan error) {
 	defer func() {
@@ -101,7 +117,8 @@ func (d *DetermineSummarys) Read(DoneInside chan struct{}, ErrCh chan error) {
 	}()
 	d.Log.Infof("Start Run DetSummary")
 	for {
-		for keyid, _ := range d.DataMapId {
+		allWellEpty := true
+		for keyid := range d.DataMapId {
 			select {
 			case <-d.done:
 				{
@@ -118,6 +135,7 @@ func (d *DetermineSummarys) Read(DoneInside chan struct{}, ErrCh chan error) {
 			if g == nil {
 				continue
 			}
+			allWellEpty = false
 			var resStr *nt.OperationOne
 			resStr, ok := g.(*nt.OperationOne)
 			if !ok {
@@ -190,6 +208,9 @@ func (d *DetermineSummarys) Read(DoneInside chan struct{}, ErrCh chan error) {
 				}
 			}
 			d.DataMapId[keyid] = data
+		}
+		if allWellEpty {
+			return
 		}
 	}
 }

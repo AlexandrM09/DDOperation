@@ -1,6 +1,7 @@
 package algoritmdetermine
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -44,47 +45,70 @@ type (
 		Out   []string //pub name in busevent
 		//id скважин должны быть добавлены до старта,
 		// в процессе работы скважины с текущей архитектурой добавлять нeльзя
-		Id   map[string]int
-		done chan struct{}
+		Id       map[string]int
+		doneWait chan struct{}
+		ctx      context.Context
 	}
 )
 
-func (d *DetermineElementary) AddWell(id string) {
+func NewDetElementary(ctx context.Context, in string, out []string, l *logrus.Logger, cfg *nt.ConfigDt, store *StoreMap.Brocker, wellid []string) *DetermineElementary {
+	dt := DetermineElementary{
+		Log:       l,
+		Wg:        &sync.WaitGroup{},
+		Cfg:       cfg,
+		In:        in,
+		Out:       out,
+		DataMapId: make(map[string]SaveDetElementary, len(wellid)),
+		Id:        make(map[string]int, len(wellid)),
+		Store:     store,
+		ctx:       ctx,
+		doneWait:  make(chan struct{}),
+	}
+	for ind, v := range wellid {
+		dt.Log.Debugf("before e.AddWell(v.Id),id:%s\n", v)
+		dt.addWell(ind, v)
+	}
+	return &dt
+}
+func (d *DetermineElementary) addWell(index int, id string) {
 	_, ok := d.Id[id]
 	if !ok {
-		d.Id[id] = 1
+		d.Id[id] = index
 		d.DataMapId[id] = SaveDetElementary{ActiveOperation: -1}
 	}
 }
 
-func (d *DetermineElementary) Stop() map[string]SaveDetElementary {
-	defer close(d.done)
-	d.done <- struct{}{}
-	d.Wg.Wait()
+// Ожидание пока хотябы в одной скважине поступают данные
+func (d *DetermineElementary) WaitandGetReault() map[string]SaveDetElementary {
+
+	// d.Wg.Wait()
+	<-d.doneWait
+	d.Log.Info("DetermineElementary WaitandGetReault done")
 	return d.DataMapId
 }
 func (d *DetermineElementary) Run(ErrCh chan error) {
-	d.done = make(chan struct{})
+
 	DoneInside := make(chan struct{})
+	d.Wg.Add(1)
 	go func() {
 		defer close(DoneInside)
+		defer close(d.doneWait)
 
-		d.Wg.Add(1)
-		go d.Read(DoneInside, d.done, ErrCh)
+		go d.Read(d.ctx, DoneInside, ErrCh)
 		for {
 			select {
-			//case <-ErrCh:
-			//	return
+
 			case <-DoneInside:
 				{
+					d.Log.Info("DetermineElementary Run case <-DoneInside done")
+					d.doneWait <- struct{}{}
 					d.Wg.Done()
 					return
 				}
-			default:
 			}
 		}
 	}()
-	return
+
 }
 func (d *DetermineElementary) addDatatooperation(id string, flag int) {
 	//dt.Data.Mu.Lock()
@@ -131,6 +155,8 @@ func (d *DetermineElementary) startnewoperation(id string) {
 		data.Temp.FlagChangeTrip = 0
 		g = data.Temp.LastTripData
 	}
+	d.Log.Debugf("DetermineElementary startnewoperation data.ActiveOperation =%d", data.ActiveOperation)
+
 	data.OperationList = append(data.OperationList,
 		nt.OperationOne{Operaton: d.Cfg.Operationtype[data.ActiveOperation], StartData: g, Status: "start"})
 	data.Temp.LastStartData = g
@@ -138,7 +164,10 @@ func (d *DetermineElementary) startnewoperation(id string) {
 	dtmp := data.OperationList[len(data.OperationList)-1]
 	d.Log.Debugf("Send Determine id=%s,time=%s,Op=%s", id, dtmp.StartData.Time.Format("15:04"), dtmp.Operaton)
 	d.DataMapId[id] = data
-	d.Store.Send("Determine", id, &dtmp)
+	ind, ok := d.Id[id]
+	if ok && ind > -1 && ind < len(d.Out) {
+		d.Store.Send(d.Out[ind], id, &dtmp)
+	}
 	d.Log.Debug("Start operation")
 }
 func (d *DetermineElementary) saveoperation(id string) {
@@ -147,26 +176,30 @@ func (d *DetermineElementary) saveoperation(id string) {
 		d.Log.Debugf("DetermineElementary:something went very wrong")
 		return
 	}
-	len := len(data.OperationList)
-	if len == 0 {
+	lenOpl := len(data.OperationList)
+	if lenOpl == 0 {
 		return
 	}
 	if data.Temp.FlagChangeTrip == 1 {
 		//dt.Data.temp.FlagChangeTrip=0
-		data.OperationList[len-1].StopData = data.Temp.LastTripData
+		data.OperationList[lenOpl-1].StopData = data.Temp.LastTripData
 		//l.Printf("FlagChangeTrip == 1")
 		d.Log.Debug("FlagChangeTrip == 1")
 	} else {
-		data.OperationList[len-1].StopData = data.LastScapeData
+		data.OperationList[lenOpl-1].StopData = data.LastScapeData
 	}
-	data.OperationList[len-1].Status = "save"
+	data.OperationList[lenOpl-1].Status = "save"
 	d.DataMapId[id] = data
-	dtmp := data.OperationList[len-1]
+	dtmp := data.OperationList[lenOpl-1]
 	d.Log.Debugf("Send Determine id=%s,time=%s,Op=%s", id, dtmp.StartData.Time.Format("15:04"), dtmp.Operaton)
-	d.Store.Send("Determine", id, &dtmp)
+	ind, ok := d.Id[id]
+	lenOut := len(d.Out)
+	if ok && ind > -1 && ind < lenOut {
+		d.Store.Send(d.Out[ind], id, &dtmp)
+	}
 	d.Log.Debug("Stop and save  operation ")
 }
-func (d *DetermineElementary) Read(DoneInside chan struct{}, Done chan struct{}, ErrCh chan error) {
+func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}, ErrCh chan error) {
 	defer func() {
 		DoneInside <- struct{}{}
 		d.Log.Infof("Exit read DetermineElementary ")
@@ -184,10 +217,17 @@ func (d *DetermineElementary) Read(DoneInside chan struct{}, Done chan struct{},
 	checkInt := [11]int{0, 1, 2, 3, 4, 5, 0, 6, 7, 8, 9}
 	d.ListCheck = []determineOne{&Check0{}, &Check1{},
 		&Check2{}, &Check3{}, &Check4{}, &Check5{}, &Check7{}, &Check8{}, &Check9{}, &Check10{}}
+	countEmpty := 0
 	for {
+		countEmpty += 1
+		if countEmpty > 500 {
+			d.Log.Error("DetermineElementary AllSteamsEmpty")
+			return
+		}
+		d.Log.Infof("countEmpty=%d", countEmpty)
 		for id, _ := range d.Id {
 			select {
-			case <-Done:
+			case <-ctx.Done():
 				{
 					d.Log.Info("on-demand output DetermineElementary")
 					return
@@ -197,11 +237,15 @@ func (d *DetermineElementary) Read(DoneInside chan struct{}, Done chan struct{},
 				}
 			}
 			//read data
+			
 			g := d.Store.Receive(d.In, id) //"ScapeData"
-			//	d.Log.Infof("Read ScapeData id=%s,ii2=%v", d.Id, ii2)
+
+			d.Log.Infof("Read ScapeData id=%s,in=%s,value=%v,countEmpty=%d", id, d.In, g, countEmpty)
 			if g == nil {
+				d.Log.Infof("Read ScapeData nil id=%s,in=%s,value=%v,countEmpty=%d", id, d.In, g, countEmpty)
 				continue
 			}
+
 			var temp1 *nt.ScapeDataD
 			temp1, ok := g.(*nt.ScapeDataD)
 			data, ok := d.DataMapId[id]
@@ -213,9 +257,11 @@ func (d *DetermineElementary) Read(DoneInside chan struct{}, Done chan struct{},
 			if !ok {
 				continue
 			}
-			d.Log.Infof("after parse ScapeData id=%s,", d.Id)
+			countEmpty = 0
+			d.Log.Infof("after parse ScapeData id=%s,", id)
 			if data.ActiveOperation >= 0 {
 				res, changeOp = d.ListCheck[checkInt[data.ActiveOperation]].Check(d, &data)
+				d.Log.Infof("after d.ListCheck[] res=%v,changeOp=%v", res, changeOp)
 			} else {
 				res = -1
 			}
@@ -231,20 +277,26 @@ func (d *DetermineElementary) Read(DoneInside chan struct{}, Done chan struct{},
 			switch {
 			case res == data.ActiveOperation:
 				{ //addDatatooperation
+					d.Log.Infof("before d.addDatatooperation id=%s", id)
 					d.addDatatooperation(id, 0)
+					d.Log.Infof("after d.addDatatooperation id=%s", id)
 				}
 			default:
 				{
+					d.Log.Infof("before switch default id=%s ,changeOp=%v", id, changeOp)
 					if !changeOp {
 						d.addDatatooperation(id, 1)
 						d.saveoperation(id)
 					}
-					d.Log.Debug(" after d.AtiveOperation = res")
+					d.Log.Debugf(" after d.AtiveOperation = res,data.ActiveOperation =%d,res=%d", data.ActiveOperation, res)
 					data.ActiveOperation = res
+					d.DataMapId[id] = data
 					if changeOp {
 						d.addDatatooperation(id, 0)
 					}
 					if !changeOp {
+						d.Log.Debugf(" after d.startnewoperation(id) ,data.ActiveOperation =%d,res=%d", data.ActiveOperation, res)
+
 						d.startnewoperation(id)
 						d.addDatatooperation(id, 0)
 					}
@@ -253,10 +305,14 @@ func (d *DetermineElementary) Read(DoneInside chan struct{}, Done chan struct{},
 						changeOp = false
 					}
 					//d.startnewoperation()
+					d.Log.Infof("after switch default id=%s ,changeOp=%v", id, changeOp)
 				}
 
 			}
 			data.LastScapeData = data.ScapeData
+			d.DataMapId[id] = data
+			d.Log.Infof("after switch id=%s ,changeOp=%v", id, changeOp)
 		}
+
 	}
 }
