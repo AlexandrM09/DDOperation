@@ -81,6 +81,7 @@ func (St *SteamCsv) ReadSteam(ErrCh chan error) chan nt.ScapeDataD {
 func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, ErrCh chan error) {
 	defer func() {
 		St.Log.Info("Exit csv Steam ", St.Id, ", total working time(s):", time.Since(St.start).Seconds())
+		fmt.Printf("Exit csv Steam id=%s, total working time(s):%0.1f\n", St.Id, time.Since(St.start).Seconds())
 		DoneCh <- struct{}{}
 
 	}()
@@ -134,11 +135,12 @@ func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, Do
 			}
 		}
 		//===========
+		
 		line, error := reader.Read()
 		if error == io.EOF { //|| (n > 5)
 			break
 		} else if error != nil {
-			St.Log.Error("read line, ", error)
+			St.Log.Errorf("error with read line %d,err=%v ",n, error)
 			ErrCh <- err
 			return
 		}
@@ -166,6 +168,7 @@ func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, Do
 			}
 		}
 		ScapeData.Count = n
+		ScapeData.Id = St.Id
 		if St.bTime {
 			if ScapeData.Time.Sub(St.tm) > 0 {
 				St.Log.Debugf("id=%s sending in chanel line %d, time:%s ", St.Id, n, ScapeData.Time.Format("2006-01-02 15:04:05"))

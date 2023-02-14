@@ -91,6 +91,11 @@ type (
 		Operaton                                   string
 		Params                                     string
 	}
+	//OperationOne for sending other servises
+	SendingTopicDeterm struct {
+		IdWell    string
+		Operation OperationOne
+	}
 )
 
 /*

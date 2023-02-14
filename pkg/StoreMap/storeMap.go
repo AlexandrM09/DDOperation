@@ -22,106 +22,74 @@ type (
 	// 	Value    map[string]chan interface{}
 	// 	flagFull bool
 	// }
-	Toppic = map[string]Topic
-	Brocker   struct {
-		Log        *logrus.Logger
-		count      int
-		Partitions Partition
+	Topic   = map[string]chan interface{}
+	Brocker struct {
+		Log    *logrus.Logger
+		count  int
+		Topics Topic
 		//ScapeCh
-		mu *sync.RWMutex
+		mu    *sync.RWMutex
+		state bool
 	}
 )
 
-func New(log *logrus.Logger) *Brocker {
+func New(log *logrus.Logger, topic []string) *Brocker {
 
 	b := Brocker{Log: log,
-		count:      chanelbufcount,
-		Partitions: make(Partition, 6),
-		mu:         &sync.RWMutex{},
+		count:  chanelbufcount,
+		Topics: make(Topic, len(topic)),
+		mu:     &sync.RWMutex{},
+		state:  true,
 	}
-	b.Partitions["Sensors data save"] = Topic{
-		Value: make(map[string]chan interface{}, wellcount),
-		mu:    &sync.RWMutex{}}
-	b.Partitions["Sensors data"] = Topic{
-		Value: make(map[string]chan interface{}, wellcount),
-		mu:    &sync.RWMutex{}}
-	b.Partitions["Determine save"] = Topic{
-		Value: make(map[string]chan interface{}, wellcount),
-		mu:    &sync.RWMutex{}}
-	b.Partitions["Determine"] = Topic{
-		Value: make(map[string]chan interface{}, wellcount),
-		mu:    &sync.RWMutex{}}
-	b.Partitions["Summary"] = Topic{
-		Value: make(map[string]chan interface{}, wellcount),
-		mu:    &sync.RWMutex{}}
+	for _, v := range topic {
+		b.Topics[v] = make(chan interface{}, chanelbufcount)
+	}
 
 	return &b
 }
-
-func (b *Brocker) Send(partition string, id string, val interface{}) bool {
-	var t Topic
-	var ok bool
-	if t, ok = b.Partitions[partition]; !ok {
+func (b *Brocker) Close() {
+	b.mu.Lock()
+	b.state = false
+	b.mu.Unlock()
+	for _, v := range b.Topics {
+		close(v)
+	}
+}
+func (b *Brocker) Send(topic string, val interface{}) bool {
+	if !b.state {
 		return false
 	}
-
-	v, ok := t.Value[id]
+	var v chan interface{}
+	var ok bool
+	v, ok = b.Topics[topic]
 	if !ok {
-		t.mu.Lock()
-
-		t.Value[id] = make(chan interface{}, chanelbufcount)
-		v, ok = t.Value[id]
-		if !ok {
-			return false
-		}
-		t.mu.Unlock()
-		// fmt.Printf("broker Send partition=%s,id =%s,ok=%v\n", partition, id, ok)
+		return false
 	}
 	if len(v) == cap(v) {
-		// if !t.flagFull {
-		// 	b.Log.Debugf("partition %s topicid=%s is full \n", partition, id)
-		// 	t.flagFull = true
-		// 	b.Partitions[partition] = t
-		// }
-		b.Log.Debugf("partition %s topicid=%s is full \n", partition, id)
+		b.Log.Debugf("topicid=%s is full \n", topic)
 		return false
 	}
 	v <- val
-	t.flagFull = false
 	// fmt.Printf("broker Send return=%s,id =%s,data=%v\n", partition, id, v)
 	return true
 }
-func (b *Brocker) Receive(partition string, id string) interface{} {
-	var t Topic
+func (b *Brocker) Receive(topic string) interface{} {
+	var v chan interface{}
 	var ok bool
-	if t, ok = b.Partitions[partition]; !ok {
-		return nil
-	}
-
-	//t.mu.Lock()
-	v, ok := t.Value[id]
-	//t.mu.Unlock()
+	v, ok = b.Topics[topic]
 	if !ok {
 		return nil
 	}
 	var val interface{}
-
 	select {
 	case val, ok = <-v:
 	default:
 		return nil
 	}
 	if !ok {
-		// fmt.Printf("broker Read partition=%s,id =%s is nil\n", partition, id)
+
 		return nil
 	}
-	// fmt.Printf("broker Read partition=%s,id =%s,data = %v\n", partition, id, val)
+
 	return val
-}
-func (b *Brocker) CloseBrockerChanel() {
-	for _, t := range b.Partitions {
-		for _, v := range t.Value {
-			close(v)
-		}
-	}
 }

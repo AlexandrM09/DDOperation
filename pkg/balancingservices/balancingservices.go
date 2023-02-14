@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	store "github.com/AlexandrM09/DDOperation/pkg/StoreMap"
@@ -21,6 +22,13 @@ const (
 	topic2 = "Determine_"
 )
 
+var topic = []string{"Sensors data",
+	//   "Sensors data save",
+	//   "Determine save",
+	"Determine",
+	//    "Summary",
+}
+
 type (
 	//SteamI2 basic interface for operations recognition variant two
 	SteamI2 interface {
@@ -34,6 +42,7 @@ type (
 	}
 	steams struct {
 		Steams [countwell]SteamI2
+		Wg     *sync.WaitGroup
 	}
 	Well = struct {
 		Id         string
@@ -90,7 +99,7 @@ func (pW *PoolWell) Building(path string, durat int) error {
 		return err
 	}
 	//EvetBus create
-	pW.Store = store.New(pW.Log)
+	pW.Store = store.New(pW.Log, topic)
 	//Make Steam array
 
 	pW.ctx, pW.Cancel = context.WithTimeout(context.Background(), time.Duration(durat)*time.Second)
@@ -116,7 +125,7 @@ func (pW *PoolWell) Run() error {
 		fmt.Printf("after Run defer func() 1 \n")
 		pW.Cancel()
 		fmt.Printf("after Run defer func() 2 \n")
-		pW.Store.CloseBrockerChanel()
+		pW.Store.Close()
 		fmt.Printf("after Run defer func() \n")
 		pW.Log.Info("after Run defer func()")
 	}()
@@ -141,6 +150,7 @@ func (pW *PoolWell) Run() error {
 			}
 		}
 	}()
+	pW.Steams.Wg.Wait()
 	resElementary := pW.detElementary.WaitandGetReault()
 	_ = resElementary
 	fmt.Printf("cahnel doneAllSteam reding \n")
@@ -187,12 +197,15 @@ func buildSteam(ctx context.Context, steams *steams, arwells *Wells, l *logrus.L
 		id1 := (*arwells)[i].Id
 		fmt.Printf("buildSteam i:%d,id:%s,path:%s\n", i, id1, (*arwells)[i].pathsource)
 		steams.Steams[i] = steam.New(ctx, id1, (*arwells)[i].pathsource, l)
+
 	}
+	steams.Wg = &sync.WaitGroup{}
 	//return
 	fmt.Printf("buildSteam: %v\n", *steams)
 }
 func runSteam(steams *steams, ErrSteam chan error, Store *store.Brocker, count int, l *logrus.Logger) {
 	for i := range steams.Steams {
+		steams.Wg.Add(1)
 		go func(k int) {
 			n := k
 			l.Debugf("start steams %d", n)
@@ -200,10 +213,11 @@ func runSteam(steams *steams, ErrSteam chan error, Store *store.Brocker, count i
 			for v := range steams.Steams[n].ReadSteam(ErrSteam) {
 				value := v
 				l.Debugf("steams %d ,id = %s, value=%v", n, steams.Steams[k].(*steam.SteamCsv).Id, v.Values[3])
-				for !Store.Send(topic1, steams.Steams[n].(*steam.SteamCsv).Id, &value) {
+				for !Store.Send(topic[0], &value) {
 					time.Sleep(10 * time.Microsecond)
 				}
 			}
+			steams.Wg.Done()
 		}(i)
 	}
 }
