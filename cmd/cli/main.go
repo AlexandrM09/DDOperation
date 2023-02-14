@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -26,13 +27,15 @@ func main() {
 		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
-	tm := dtm.NewDetermine(&sr, &steam.SteamCsv{
+	ctx, Cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer Cancel()
+	tm := dtm.NewDetermine(ctx, &sr, &steam.SteamCsv{
 		FilePath:  "./source/source2.zip",
 		StartTime: "___2019-05-25 17:52:43",
 		Log:       sr.Log,
 	})
 	fmt.Printf("Start determine operation\n")
-	dur, err := tm.Start(300)
+	dur, err := tm.Start()
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	if err != nil {

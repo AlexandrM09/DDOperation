@@ -19,7 +19,7 @@ import (
 type (
 	//SteamI basic interface for operations recognition
 	SteamI interface {
-		Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error)
+		Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, ErrCh chan error)
 	}
 
 	//SteamRND test steam
@@ -135,12 +135,12 @@ func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, Do
 			}
 		}
 		//===========
-		
+
 		line, error := reader.Read()
 		if error == io.EOF { //|| (n > 5)
 			break
 		} else if error != nil {
-			St.Log.Errorf("error with read line %d,err=%v ",n, error)
+			St.Log.Errorf("error with read line %d,err=%v ", n, error)
 			ErrCh <- err
 			return
 		}

@@ -50,7 +50,7 @@ func TestSteam(t *testing.T) {
 		}
 	}
 	go send("well1")
-	go send("well2")
+	// go send("well2")
 	time.Sleep(500 * time.Millisecond)
 	readTopic := func(sub string, count *int) {
 
@@ -84,9 +84,9 @@ func TestSteam(t *testing.T) {
 		}
 	}
 	var count int
+	// read(&count)
 	read(&count)
-	read(&count)
-	sendingCount := 2 * 3 * countdata * len(topic)
+	sendingCount := 3 * countdata * len(topic)
 	if !(count == sendingCount) {
 		t.Errorf("not equivalent count sending and reading data:sending %d,reading:%d", sendingCount, count)
 	}

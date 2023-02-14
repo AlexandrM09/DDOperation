@@ -19,7 +19,6 @@ type (
 		ScapeDataCh     chan ScapeDataD
 		ErrCh           chan error
 		DoneCh          chan struct{}
-		Done            chan struct{}
 		TimelimitCh     chan struct{}
 		DoneSummary     chan struct{}
 		ScapeFullData   bool

@@ -56,9 +56,12 @@ func (b *Brocker) Close() {
 	}
 }
 func (b *Brocker) Send(topic string, val interface{}) bool {
+	b.mu.Lock()
 	if !b.state {
+		b.mu.Unlock()
 		return false
 	}
+	b.mu.Unlock()
 	var v chan interface{}
 	var ok bool
 	v, ok = b.Topics[topic]
@@ -76,7 +79,9 @@ func (b *Brocker) Send(topic string, val interface{}) bool {
 func (b *Brocker) Receive(topic string) interface{} {
 	var v chan interface{}
 	var ok bool
+	b.mu.Lock()
 	v, ok = b.Topics[topic]
+	b.mu.Unlock()
 	if !ok {
 		return nil
 	}
