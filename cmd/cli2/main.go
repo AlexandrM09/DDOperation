@@ -17,7 +17,7 @@ import (
 func main() {
 	defer duration(track(os.Stdout, "App duration"))
 	pool := &alg.PoolWell{}
-	pool.Building("config.yaml", 25)
+	pool.Building("config.yaml", 10)
 	fmt.Printf("cli run \n")
 	pool.Run()
 	fmt.Printf("programm exit \n")

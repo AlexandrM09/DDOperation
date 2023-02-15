@@ -62,10 +62,11 @@ type (
 	//ScapeDataD time series data
 	// golang CRUD with gin and ent
 	ScapeDataD struct {
-		Id     string
-		Time   time.Time
-		Count  int
-		Values [20]float32
+		Id             string
+		Time           time.Time
+		Count          int
+		Values         [20]float32
+		StatusLastData bool
 
 		/*0-Дата Время
 		  1-Время Дата

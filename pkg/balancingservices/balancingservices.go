@@ -17,32 +17,50 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// const (
+//
+//	topic1 = "Sensors data"
+//	topic2 = "Determine_"
+//
+// )
 const (
-	topic1 = "Sensors data"
-	topic2 = "Determine_"
+	countwell              = 3
+	countWellRepoSave      = 3
+	countDetermiElementary = 3
+	countDetermiSummary    = 3
+	countReadBufferChanel  = 1000
+	timeleave              = 3
 )
 
 var topic = []string{"Sensors data",
 	//   "Sensors data save",
 	//   "Determine save",
 	"Determine",
-	//    "Summary",
+	"Summary",
 }
 
 type (
 	//SteamI2 basic interface for operations recognition variant two
-	SteamI2 interface {
+	steamI2 interface {
 		ReadSteam(ErrCh chan error) chan nt.ScapeDataD
 	}
 
 	//DetermineElementary well
-	DetermineElementaryI2 interface {
+	determineElementaryI2 interface {
 		Run(ErrCh chan error)
 		WaitandGetReault() map[string]detElem.SaveDetElementary
 	}
+	determineSummaryI interface {
+		Run(ErrCh chan error)
+		WaitandGetReault() map[string]detElem.SummaryResult
+	}
 	steams struct {
-		Steams [countwell]SteamI2
+		Steams [countwell]steamI2
 		Wg     *sync.WaitGroup
+	}
+	serviceCh struct {
+		In  []chan interface{}
+		Out []chan interface{}
 	}
 	Well = struct {
 		Id         string
@@ -51,14 +69,16 @@ type (
 	}
 	Wells    = []Well
 	PoolWell struct {
-		wells         *Wells
-		Log           *logrus.Logger
-		Cfg           *nt.ConfigDt
-		Steams        steams //steam.SteamCsv
-		Store         *store.Brocker
-		detElementary DetermineElementaryI2
-		ctx           context.Context
-		Cancel        context.CancelFunc
+		wells            *Wells
+		Log              *logrus.Logger
+		Cfg              *nt.ConfigDt
+		Steams           steams //steam.SteamCsv
+		Store            *store.Brocker
+		detElementary    determineElementaryI2
+		DetermineSummary determineSummaryI
+		ServicesCh       map[string]serviceCh
+		ctx              context.Context
+		Cancel           context.CancelFunc
 	}
 	rrobin = struct {
 		n    int
@@ -69,15 +89,6 @@ type (
 		countworker  int
 		wrk          []rrobin
 	}
-)
-
-const (
-	countwell              = 3
-	countWellRepoSave      = 3
-	countDetermiElementary = 3
-	countDetermiSummary    = 3
-	countReadBufferChanel  = 1000
-	timeleave              = 3
 )
 
 func (pW *PoolWell) Building(path string, durat int) error {
@@ -106,8 +117,20 @@ func (pW *PoolWell) Building(path string, durat int) error {
 	buildSteam(pW.ctx, &pW.Steams, pW.wells, pW.Log)
 	pW.Log.Debugf("after build Steam: %v\n", pW.Steams)
 	//Make DetElementary
-
-	pW.detElementary = detElem.NewDetElementary(pW.ctx, topic1, []string{topic2}, pW.Log, pW.Cfg, pW.Store, toArrayWellId(*pW.wells))
+	pW.ServicesCh = map[string]serviceCh{
+		topic[1]: {
+			In:  []chan interface{}{make(chan interface{}, 50)},
+			Out: []chan interface{}{make(chan interface{}, 50)},
+		},
+		topic[2]: {
+			In:  []chan interface{}{make(chan interface{}, 50)},
+			Out: []chan interface{}{make(chan interface{}, 50)},
+		},
+	}
+	pW.detElementary = detElem.NewDetElementary(pW.ctx,
+		pW.ServicesCh[topic[1]].In[0], pW.ServicesCh[topic[1]].Out[0], pW.Log, pW.Cfg, toArrayWellId(*pW.wells))
+	pW.DetermineSummary = detElem.New(pW.ctx,
+		pW.ServicesCh[topic[2]].In[0], pW.ServicesCh[topic[2]].Out[0], pW.Log, pW.Cfg, toArrayWellId(*pW.wells))
 	fmt.Printf("Exit Building \n")
 	return nil
 }
@@ -128,17 +151,50 @@ func (pW *PoolWell) Run() error {
 		pW.Store.Close()
 		fmt.Printf("after Run defer func() \n")
 		pW.Log.Info("after Run defer func()")
+		// for key := range pW.ServicesCh {
+		// 	// for j := range pW.ServicesCh[key].In {
+		// 	// 	close(pW.ServicesCh[key].In[j])
+		// 	// }
+		// 	// for j := range pW.ServicesCh[key].Out {
+		// 	// 	close(pW.ServicesCh[key].Out[j])
+		// 	// }
+		// }
 	}()
-	//Запускаем чтение данных из csv файлов
-	ErrSteam := make(chan error, countwell*2)
-	runSteam(&pW.Steams, ErrSteam, pW.Store, countwell, pW.Log)
 
 	//Запускаем распознавание элементарных операций
-	go pW.detElementary.Run(ErrSteam)
+	ErrSteam := make(chan error, countwell*2)
+	pW.detElementary.Run(ErrSteam)
+	//Запускаем DetermineSummary
+	pW.DetermineSummary.Run(ErrSteam)
+
+	//Читаем из detElementary и пишем на вход determineSummary
+	go func() {
+		for v := range pW.ServicesCh[topic[1]].Out[0] {
+			pW.ServicesCh[topic[2]].In[0] <- v
+
+		}
+		pW.Log.Debugf("close(pW.ServicesCh[topic[2]].In[0])")
+		close(pW.ServicesCh[topic[2]].In[0])
+	}()
+	//Читаем из DetermineSummary
+	go func() {
+		for v := range pW.ServicesCh[topic[2]].Out[0] {
+			_ = v
+
+		}
+		// close(pW.ServicesCh[topic[2]].In[0])
+	}()
 	//Пишем ошибки в лог
 	go func() {
+		count := 0
 		for {
+
 			select {
+			case <-time.Tick(time.Duration(500 * time.Millisecond)):
+				{
+					count += 500
+					pW.Log.Infof("duration is %dms", count)
+				}
 			case <-pW.ctx.Done():
 				{
 					fmt.Printf("exit to error <-ctx.Done() \n")
@@ -150,21 +206,33 @@ func (pW *PoolWell) Run() error {
 			}
 		}
 	}()
-	pW.Steams.Wg.Wait()
+
+	//Запускаем чтение данных из csv файлов
+	//Ждем окончания данных
+	go runSteam(&pW.Steams, pW.ServicesCh[topic[1]].In[0], ErrSteam, pW.Store, countwell, pW.Log)
+	pW.Log.Debugf("after close(pW.ServicesCh[topic[1]].In[0]) ")
+	//Ждем окончания первичного распознавания операций
 	resElementary := pW.detElementary.WaitandGetReault()
+	pW.Log.Debugf("after pW.detElementary.WaitandGetReault() ")
 	_ = resElementary
-	fmt.Printf("cahnel doneAllSteam reding \n")
-	pW.Log.Debugf("cahnel doneAllSteam reding")
-	fmt.Printf("the program has been successfully completed \n")
-	pW.Log.Debugf("the program has been successfully completed")
-	/*	robin := &Roundrobin{
-			countclients: countwell,
-			countworker:  countDetermiElementary,
+	//Ждем окончания свернутого списка операций
+	resSummary := pW.DetermineSummary.WaitandGetReault()
+	_ = resSummary
+	//Печатаем результат
+	for j := range *pW.wells {
+		id := (*pW.wells)[j].Id
+		data2 := resSummary[id].Summarysheet
+		fmt.Printf("Start print Summarysheet(idWell=%s)  short form len=%v \n", id, len(data2))
+		if len(data2) > 0 {
+			fmt.Println(data2[0].Sheet.StartData.Time.Format("2006-01-02"))
 		}
-		robin.Init()
-		//save repo skip
-		//start determineElementary
-	*/
+		for i := 0; i < len(data2); i++ {
+			fmt.Println(FormatSheet2(data2[i]))
+		}
+	}
+
+	pW.Log.Debugf("cahnel doneAllSteam reding")
+
 	return nil
 }
 func FormatSheet(Op nt.OperationOne) string {
@@ -203,7 +271,7 @@ func buildSteam(ctx context.Context, steams *steams, arwells *Wells, l *logrus.L
 	//return
 	fmt.Printf("buildSteam: %v\n", *steams)
 }
-func runSteam(steams *steams, ErrSteam chan error, Store *store.Brocker, count int, l *logrus.Logger) {
+func runSteam(steams *steams, Out chan interface{}, ErrSteam chan error, Store *store.Brocker, count int, l *logrus.Logger) {
 	for i := range steams.Steams {
 		steams.Wg.Add(1)
 		go func(k int) {
@@ -213,13 +281,16 @@ func runSteam(steams *steams, ErrSteam chan error, Store *store.Brocker, count i
 			for v := range steams.Steams[n].ReadSteam(ErrSteam) {
 				value := v
 				l.Debugf("steams %d ,id = %s, value=%v", n, steams.Steams[k].(*steam.SteamCsv).Id, v.Values[3])
-				for !Store.Send(topic[0], &value) {
-					time.Sleep(10 * time.Microsecond)
-				}
+				//
+				Out <- value
 			}
+			Out <- nt.ScapeDataD{Id: steams.Steams[k].(*steam.SteamCsv).Id, StatusLastData: true}
 			steams.Wg.Done()
 		}(i)
 	}
+	steams.Wg.Wait()
+	l.Debugf("after pW.Steams.Wg.Wait() ")
+	close(Out)
 }
 
 func LoadWell(count int) (awells *Wells, er error) {
@@ -303,4 +374,14 @@ func createLog(ll logrus.Level) *logrus.Logger {
 	}
 	return log
 
+}
+func FormatSheet2(sh nt.SummarysheetT) string {
+	tempt, _ := time.Parse("15:04:01", "00:00:00")
+	dur := sh.Sheet.StopData.Time.Sub(sh.Sheet.StartData.Time)
+	return fmt.Sprintf("%s | %s |%s |%s %s",
+		sh.Sheet.StartData.Time.Format("15:04"),
+		sh.Sheet.StopData.Time.Format("15:04"),
+		tempt.Add(dur).Format("15:04"),
+		sh.Sheet.Operaton,
+		sh.Sheet.Params)
 }
