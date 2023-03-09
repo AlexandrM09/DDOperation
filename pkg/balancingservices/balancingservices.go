@@ -9,10 +9,11 @@ import (
 	"sync"
 	"time"
 
-	store "github.com/AlexandrM09/DDOperation/pkg/StoreMap"
+	// store "github.com/AlexandrM09/DDOperation/pkg/StoreMap"
 	detElem "github.com/AlexandrM09/DDOperation/pkg/algoritmdetermine"
 	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 	steam "github.com/AlexandrM09/DDOperation/pkg/steamd"
+	store "github.com/AlexandrM09/DDOperation/pkg/storedetermine"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 )
@@ -48,11 +49,11 @@ type (
 	//DetermineElementary well
 	determineElementaryI2 interface {
 		Run(ErrCh chan error)
-		WaitandGetReault() map[string]detElem.SaveDetElementary
+		WaitandGetReault() map[string]*nt.SaveDetElementary
 	}
 	determineSummaryI interface {
 		Run(ErrCh chan error)
-		WaitandGetReault() map[string]detElem.SummaryResult
+		WaitandGetReault() map[string]*nt.SummaryResult
 	}
 	steams struct {
 		Steams [countwell]steamI2
@@ -69,11 +70,12 @@ type (
 	}
 	Wells    = []Well
 	PoolWell struct {
-		wells            *Wells
-		Log              *logrus.Logger
-		Cfg              *nt.ConfigDt
-		Steams           steams //steam.SteamCsv
-		Store            *store.Brocker
+		wells  *Wells
+		Log    *logrus.Logger
+		Cfg    *nt.ConfigDt
+		Steams steams //steam.SteamCsv
+		// Store            *store.Brocker
+		store            store.Storedetermine
 		detElementary    determineElementaryI2
 		DetermineSummary determineSummaryI
 		ServicesCh       map[string]serviceCh
@@ -110,7 +112,7 @@ func (pW *PoolWell) Building(path string, durat int) error {
 		return err
 	}
 	//EvetBus create
-	pW.Store = store.New(pW.Log, topic)
+	pW.store = store.New()
 	//Make Steam array
 
 	pW.ctx, pW.Cancel = context.WithTimeout(context.Background(), time.Duration(durat)*time.Second)
@@ -128,9 +130,9 @@ func (pW *PoolWell) Building(path string, durat int) error {
 		},
 	}
 	pW.detElementary = detElem.NewDetElementary(pW.ctx,
-		pW.ServicesCh[topic[1]].In[0], pW.ServicesCh[topic[1]].Out[0], pW.Log, pW.Cfg, toArrayWellId(*pW.wells))
+		pW.ServicesCh[topic[1]].In[0], pW.ServicesCh[topic[1]].Out[0], pW.Log, pW.Cfg, toArrayWellId(*pW.wells), &pW.store)
 	pW.DetermineSummary = detElem.New(pW.ctx,
-		pW.ServicesCh[topic[2]].In[0], pW.ServicesCh[topic[2]].Out[0], pW.Log, pW.Cfg, toArrayWellId(*pW.wells))
+		pW.ServicesCh[topic[2]].In[0], pW.ServicesCh[topic[2]].Out[0], pW.Log, pW.Cfg, toArrayWellId(*pW.wells), &pW.store)
 	fmt.Printf("Exit Building \n")
 	return nil
 }
@@ -148,7 +150,7 @@ func (pW *PoolWell) Run() error {
 		fmt.Printf("after Run defer func() 1 \n")
 		pW.Cancel()
 		fmt.Printf("after Run defer func() 2 \n")
-		pW.Store.Close()
+		//pW.Store.Close()
 		fmt.Printf("after Run defer func() \n")
 		pW.Log.Info("after Run defer func()")
 		// for key := range pW.ServicesCh {
@@ -209,7 +211,7 @@ func (pW *PoolWell) Run() error {
 
 	//Запускаем чтение данных из csv файлов
 	//Ждем окончания данных
-	go runSteam(&pW.Steams, pW.ServicesCh[topic[1]].In[0], ErrSteam, pW.Store, countwell, pW.Log)
+	go runSteam(&pW.Steams, pW.ServicesCh[topic[1]].In[0], ErrSteam, countwell, pW.Log)
 	pW.Log.Debugf("after close(pW.ServicesCh[topic[1]].In[0]) ")
 	//Ждем окончания первичного распознавания операций
 	resElementary := pW.detElementary.WaitandGetReault()
@@ -218,11 +220,21 @@ func (pW *PoolWell) Run() error {
 	//Ждем окончания свернутого списка операций
 	resSummary := pW.DetermineSummary.WaitandGetReault()
 	_ = resSummary
+	//
 	//Печатаем результат
 	for j := range *pW.wells {
 		id := (*pW.wells)[j].Id
 		data2 := resSummary[id].Summarysheet
 		fmt.Printf("Start print Summarysheet(idWell=%s)  short form len=%v \n", id, len(data2))
+		//Подробный
+		//fmt.Printf("Start print Summarysheet len=%v \n", len(data2))
+		for i := 0; i < len(data2); i++ {
+			fmt.Println(FormatSheet(data2[i]))
+			for k := 0; k < len(data2[i].Details); k++ {
+				fmt.Println(FormatSheetDetails(data2[i].Details[k]))
+			}
+		}
+		//Короткий
 		if len(data2) > 0 {
 			fmt.Println(data2[0].Sheet.StartData.Time.Format("2006-01-02"))
 		}
@@ -235,13 +247,14 @@ func (pW *PoolWell) Run() error {
 
 	return nil
 }
-func FormatSheet(Op nt.OperationOne) string {
 
-	return fmt.Sprintf("%s | %s - %s\n",
-		Op.StartData.Time.Format("15:04"),
-		Op.Operaton,
-		Op.Params)
-}
+// func FormatSheet(Op nt.OperationOne) string {
+
+// 	return fmt.Sprintf("%s | %s - %s\n",
+// 		Op.StartData.Time.Format("15:04"),
+// 		Op.Operaton,
+// 		Op.Params)
+// }
 
 // LoadConfigYaml - load config file yaml
 func LoadConfigYaml(path string) (*nt.ConfigDt, error) {
@@ -271,7 +284,7 @@ func buildSteam(ctx context.Context, steams *steams, arwells *Wells, l *logrus.L
 	//return
 	fmt.Printf("buildSteam: %v\n", *steams)
 }
-func runSteam(steams *steams, Out chan interface{}, ErrSteam chan error, Store *store.Brocker, count int, l *logrus.Logger) {
+func runSteam(steams *steams, Out chan interface{}, ErrSteam chan error, count int, l *logrus.Logger) {
 	for i := range steams.Steams {
 		steams.Wg.Add(1)
 		go func(k int) {
@@ -384,4 +397,21 @@ func FormatSheet2(sh nt.SummarysheetT) string {
 		tempt.Add(dur).Format("15:04"),
 		sh.Sheet.Operaton,
 		sh.Sheet.Params)
+}
+
+// FormatSheet format string function
+func FormatSheet(sh nt.SummarysheetT) string {
+	return fmt.Sprintf("%s | %s |%s%s",
+		sh.Sheet.StartData.Time.Format("2006-01-02 15:04:05"),
+		sh.Sheet.StopData.Time.Format("15:04:05"),
+		sh.Sheet.Operaton,
+		sh.Sheet.Params)
+}
+
+// FormatSheetDetails format string function
+func FormatSheetDetails(Det nt.OperationOne) string {
+	return fmt.Sprintf("____%s | %s |%s %s",
+		Det.StartData.Time.Format("15:04:05"),
+		Det.StopData.Time.Format("15:04:05"),
+		Det.Operaton, Det.Params)
 }

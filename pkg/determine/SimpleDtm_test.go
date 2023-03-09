@@ -22,7 +22,7 @@ type SteamSmpl struct{}
 // function return simple fake ScapeDate for TestSimpleDtm
 func (St *SteamSmpl) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, ErrCh chan error) {
 	//nothing
-	v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	v1 := [50]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	//flow data
 	v2 := v1
 	v2[4] = 50

@@ -3,7 +3,6 @@ package algoritmdetermine
 import (
 	"context"
 	"sync"
-	"time"
 
 	// StoreMap "github.com/AlexandrM09/DDOperation/pkg/StoreMap"
 	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
@@ -13,30 +12,18 @@ import (
 type (
 	//determineOne
 	determineOne interface {
-		Check(d *DetermineElementary, data *SaveDetElementary) (int, bool)
+		Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool)
 	}
 	//SaveDeteElementary
-	SaveDetElementary = struct {
-		IdWell               string
-		OperationList        []nt.OperationOne
-		ScapeFullData        bool
-		LastScapeData        nt.ScapeDataD
-		ScapeData            nt.ScapeDataD
-		ActiveOperation      int
-		StartActiveOperation time.Time
-		Temp                 struct {
-			LastToolDepht     float32
-			LastTimeToolDepht time.Time
-			StartDepht        float32
-			LastStartData     nt.ScapeDataD
-			LastTripData      nt.ScapeDataD
-			FlagChangeTrip    int
-		}
+	store interface {
+		DElementaryGet(id string) (*nt.SaveDetElementary,bool)
+		DElementarySet(id string, v *nt.SaveDetElementary)
+		DElementaryGetAll() map[string]*nt.SaveDetElementary
 	}
 
 	//DrillDataType drill basic data struct
 	DetermineElementary struct {
-		DataMapId map[string]SaveDetElementary
+		// DataMapId map[string]nt.SaveDetElementary
 		ListCheck []determineOne
 		Log       *logrus.Logger
 		//Mu                   *sync.RWMutex
@@ -52,20 +39,22 @@ type (
 		doneWait chan struct{}
 		ctx      context.Context
 		flagExit bool
+		store    store
 	}
 )
 
-func NewDetElementary(ctx context.Context, in chan interface{}, out chan interface{}, l *logrus.Logger, cfg *nt.ConfigDt, wellid []string) *DetermineElementary {
+func NewDetElementary(ctx context.Context, in chan interface{}, out chan interface{}, l *logrus.Logger, cfg *nt.ConfigDt, wellid []string, so store) *DetermineElementary {
 	dt := DetermineElementary{
-		Log:       l,
-		Wg:        &sync.WaitGroup{},
-		Cfg:       cfg,
-		In:        in,
-		Out:       out,
-		DataMapId: make(map[string]SaveDetElementary, len(wellid)),
+		Log: l,
+		Wg:  &sync.WaitGroup{},
+		Cfg: cfg,
+		In:  in,
+		Out: out,
+		// DataMapId: make(map[string]nt.SaveDetElementary, len(wellid)),
 		// Store:     store,
 		ctx:      ctx,
 		doneWait: make(chan struct{}),
+		store:    so,
 	}
 	for ind, v := range wellid {
 		dt.Log.Debugf("before e.AddWell(v.Id),id:%s\n", v)
@@ -74,16 +63,17 @@ func NewDetElementary(ctx context.Context, in chan interface{}, out chan interfa
 	return &dt
 }
 func (d *DetermineElementary) addWell(index int, id string) {
-	d.DataMapId[id] = SaveDetElementary{IdWell: id, ActiveOperation: -1}
+	// d.DataMapId[id] = nt.SaveDetElementary{IdWell: id, ActiveOperation: -1}
+	d.store.DElementarySet(id, &nt.SaveDetElementary{IdWell: id, ActiveOperation: -1})
 }
 
 // Ожидание пока хотябы в одной скважине поступают данные
-func (d *DetermineElementary) WaitandGetReault() map[string]SaveDetElementary {
+func (d *DetermineElementary) WaitandGetReault() map[string]*nt.SaveDetElementary {
 	d.flagExit = true
 	// d.Wg.Wait()
 	<-d.doneWait
 	d.Log.Info("DetermineElementary WaitandGetReault done")
-	return d.DataMapId
+	return d.store.DElementaryGetAll()
 }
 func (d *DetermineElementary) Run(ErrCh chan error) {
 
@@ -109,7 +99,7 @@ func (d *DetermineElementary) Run(ErrCh chan error) {
 	}()
 
 }
-func (d *DetermineElementary) addDatatooperation(data *SaveDetElementary, id string, flag int) {
+func (d *DetermineElementary) addDatatooperation(data *nt.SaveDetElementary, id string, flag int) {
 	len := len(data.OperationList)
 	if len == 0 {
 		d.Log.Debugf("DetermineElementary addDatatooperation len==0")
@@ -136,7 +126,7 @@ func (d *DetermineElementary) addDatatooperation(data *SaveDetElementary, id str
 	}
 
 }
-func (d *DetermineElementary) startnewoperation(data *SaveDetElementary, id string) {
+func (d *DetermineElementary) startnewoperation(data *nt.SaveDetElementary, id string) {
 
 	g := data.ScapeData
 	if data.Temp.FlagChangeTrip == 1 {
@@ -157,7 +147,7 @@ func (d *DetermineElementary) startnewoperation(data *SaveDetElementary, id stri
 	d.Out <- &dtmp
 	d.Log.Debug("Start operation")
 }
-func (d *DetermineElementary) saveoperation(data *SaveDetElementary, id string) {
+func (d *DetermineElementary) saveoperation(data *nt.SaveDetElementary, id string) {
 	d.Log.Debugf("DetermineElementary Start saveoperation %s", id)
 
 	lenOpl := len(data.OperationList)
@@ -196,10 +186,10 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 	var res int
 	var changeOp bool
 	//var ok bool
-	for key, v := range d.DataMapId {
-		v.ActiveOperation = -1
-		d.DataMapId[key] = v
-	}
+	// for key, v := range d.DataMapId {
+	// 	v.ActiveOperation = -1
+	// 	d.DataMapId[key] = v
+	// }
 	// num interface check
 	checkInt := [11]int{0, 1, 2, 3, 4, 5, 0, 6, 7, 8, 9}
 	d.ListCheck = []determineOne{&Check0{}, &Check1{},
@@ -214,7 +204,7 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 				d.Log.Debugf("data casting failed")
 				continue
 			}
-			data, ok := d.DataMapId[tmp.Id]
+			data, ok := d.store.DElementaryGet(tmp.Id)
 			if !ok {
 				d.Log.Debugf("unknown well")
 				continue
@@ -231,14 +221,14 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 			data.ScapeData = tmp
 			d.Log.Infof("after parse ScapeData id=%s, data=%v", data.IdWell, data.ScapeData)
 			if data.ActiveOperation >= 0 {
-				res, changeOp = d.ListCheck[checkInt[data.ActiveOperation]].Check(d, &data)
+				res, changeOp = d.ListCheck[checkInt[data.ActiveOperation]].Check(d, data)
 				// d.Log.Infof("after d.ListCheck[] res=%v,changeOp=%v", res, changeOp)
 			} else {
 				res = -1
 			}
 			if res == -1 {
 				for i := 0; i < len(d.ListCheck) && (res == -1); i++ {
-					res, changeOp = d.ListCheck[i].Check(d, &data)
+					res, changeOp = d.ListCheck[i].Check(d, data)
 				}
 			} // select operation
 			if res == -1 {
@@ -250,7 +240,7 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 			case res == data.ActiveOperation:
 				{ //addDatatooperation
 					// d.Log.Infof("before d.addDatatooperation id=%s", id)
-					d.addDatatooperation(&data, data.IdWell, 0)
+					d.addDatatooperation(data, data.IdWell, 0)
 					// d.Log.Infof("after d.addDatatooperation id=%s", id)
 				}
 			default:
@@ -258,20 +248,20 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 					d.Log.Infof("before switch default id=%s ,changeOp=%v", data.IdWell, changeOp)
 					if !changeOp {
 						d.Log.Infof("if !changeOp before switch default id=%s ,changeOp=%v", data.IdWell, changeOp)
-						d.addDatatooperation(&data, data.IdWell, 1)
-						d.saveoperation(&data, data.IdWell)
+						d.addDatatooperation(data, data.IdWell, 1)
+						d.saveoperation(data, data.IdWell)
 					}
 					// d.Log.Debugf(" after d.AtiveOperation = res,data.ActiveOperation =%d,res=%d", data.ActiveOperation, res)
 					data.ActiveOperation = res
-					d.DataMapId[data.IdWell] = data
+					d.store.DElementarySet(data.IdWell, data)
 					if changeOp {
-						d.addDatatooperation(&data, data.IdWell, 0)
+						d.addDatatooperation(data, data.IdWell, 0)
 					}
 					if !changeOp {
 						d.Log.Debugf(" before startnewoperation data.ActiveOperation =%d,res=%d", data.ActiveOperation, res)
 
-						d.startnewoperation(&data, data.IdWell)
-						d.addDatatooperation(&data, data.IdWell, 0)
+						d.startnewoperation(data, data.IdWell)
+						d.addDatatooperation(data, data.IdWell, 0)
 					}
 
 					if changeOp {
@@ -283,7 +273,7 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 
 			}
 			data.LastScapeData = data.ScapeData
-			d.DataMapId[data.IdWell] = data
+			d.store.DElementarySet(data.IdWell, data)
 			// d.Log.Infof("after switch id=%s ,changeOp=%v", data.IdWell, changeOp)
 
 		}

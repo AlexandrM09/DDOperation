@@ -167,7 +167,7 @@ func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, Do
 				}
 			}
 		}
-		ScapeData.Count = n
+		// ScapeData.Count = n
 		ScapeData.Id = St.Id
 		if St.bTime {
 			if ScapeData.Time.Sub(St.tm) > 0 {

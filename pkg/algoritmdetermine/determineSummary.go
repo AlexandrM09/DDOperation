@@ -3,6 +3,7 @@ package algoritmdetermine
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	_ "time"
 
@@ -27,14 +28,15 @@ type (
 	// 		FlagChangeTrip    int
 	// 	}
 	// }
-	SummaryResult struct {
-		IdWell       string
-		Summarysheet []nt.SummarysheetT
-		Sc           nt.ResultSheet
+	storeSumm interface {
+		DSummGet(id string) (*nt.SummaryResult, bool)
+		DSummSet(id string, v *nt.SummaryResult)
+		DSummGetAll() map[string]*nt.SummaryResult
 	}
+
 	DetermineSummarys struct {
-		DataMapId map[string]SummaryResult
-		Log       *logrus.Logger
+		// DataMapId map[string]nt.SummaryResult
+		Log *logrus.Logger
 		//Mu                   *sync.RWMutex
 		Wg    *sync.WaitGroup
 		Cfg   *nt.ConfigDt
@@ -42,7 +44,8 @@ type (
 		//In    string   //pub name in busevent
 		In chan interface{}
 		//Out   []string //pub name in busevent
-		Out chan interface{}
+		Out   chan interface{}
+		store storeSumm
 		//id скважин должны быть добавлены до старта,
 		// в процессе работы скважины с текущей архитектурой добавлять нeльзя
 		stateRun bool //true=runing,false=stop
@@ -50,16 +53,17 @@ type (
 	}
 )
 
-func New(ctx context.Context, in chan interface{}, out chan interface{}, l *logrus.Logger, cfg *nt.ConfigDt, wellid []string) *DetermineSummarys {
+func New(ctx context.Context, in chan interface{}, out chan interface{}, l *logrus.Logger, cfg *nt.ConfigDt, wellid []string, so storeSumm) *DetermineSummarys {
 	ds := DetermineSummarys{
-		DataMapId: make(map[string]SummaryResult),
-		Log:       l,
-		Wg:        &sync.WaitGroup{},
-		Cfg:       cfg,
+		// DataMapId: make(map[string]nt.SummaryResult),
+		Log: l,
+		Wg:  &sync.WaitGroup{},
+		Cfg: cfg,
 		// Store:     store,
-		In:  in,
-		Out: out,
-		Ctx: ctx,
+		In:    in,
+		Out:   out,
+		Ctx:   ctx,
+		store: so,
 		// done:make(chan struct{},1),
 	}
 	for i := range wellid {
@@ -68,15 +72,15 @@ func New(ctx context.Context, in chan interface{}, out chan interface{}, l *logr
 	return &ds
 }
 func (d *DetermineSummarys) AddWell(id string) {
-	d.DataMapId[id] = SummaryResult{IdWell: id}
+	d.store.DSummSet(id, &nt.SummaryResult{IdWell: id})
 }
 
 // Ожидание пока хотябы в одной скважине поступают данные
-func (d *DetermineSummarys) WaitandGetReault() map[string]SummaryResult {
+func (d *DetermineSummarys) WaitandGetReault() map[string]*nt.SummaryResult {
 
 	d.Wg.Wait()
 	d.Log.Infof("DetermineSummarys after d.Wg.Wait() ")
-	return d.DataMapId
+	return d.store.DSummGetAll()
 }
 
 func (d *DetermineSummarys) Run(ErrCh chan error) {
@@ -135,7 +139,7 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 			// var resStr *nt.OperationOne
 			resStr := &v.Operation
 
-			data, ok := d.DataMapId[v.IdWell]
+			data, ok := d.store.DSummGet(v.IdWell)
 			if !ok {
 				d.Log.Debugf("DetermineElementary:something went very wrong")
 				return
@@ -147,7 +151,7 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 					d.Log.Debug("done and save operation idwell=%s", v.IdWell)
 					data.Sc.ResSheet.Sheet.StopData = data.Sc.ResSheet.Details[len2-1].StopData
 					data.Summarysheet = append(data.Summarysheet, *d.addSummaryStr(v.IdWell, &data.Sc.ResSheet))
-					d.DataMapId[v.IdWell] = data
+					d.store.DSummSet(v.IdWell, data)
 				}
 				continue
 			}
@@ -167,7 +171,7 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 					data.Sc.ResSheet.Details[0] = *resStr
 					d.Log.Debug("if resStr.status == save {")
 				}
-				d.DataMapId[v.IdWell] = data
+				d.store.DSummSet(v.IdWell, data)
 				continue
 			}
 			if data.Sc.Firstflag == 1 {
@@ -180,7 +184,9 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 						data.Sc.NextTime.Start = resStr.StartData.Time
 					}
 					f1 := resStr.Operaton == data.Sc.ResSheet.Sheet.Operaton
-					f2 := ((resStr.Operaton == d.Cfg.Operationtype[9]) && (data.Sc.ResSheet.Sheet.Operaton == d.Cfg.Operationtype[4]) || (data.Sc.ResSheet.Sheet.Operaton == d.Cfg.Operationtype[5]))
+					// f2 := ((resStr.Operaton == d.Cfg.Operationtype[9]) && (data.Sc.ResSheet.Sheet.Operaton == d.Cfg.Operationtype[4]) || (data.Sc.ResSheet.Sheet.Operaton == d.Cfg.Operationtype[5]))
+					//f2 := (resStr.Operaton == d.Cfg.Operationtype[9]) && (data.Sc.ResSheet.Sheet.Operaton == d.Cfg.Operationtype[4])
+					f2 := false
 					if (f1) || (f2) {
 						data.Sc.NextTime.Flag = 0
 					}
@@ -191,11 +197,12 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 					if data.Sc.NextTime.Flag == 1 {
 						data.Sc.SumItemDr = int(resStr.StopData.Time.Sub(data.Sc.NextTime.Start).Seconds())
 					}
-					if data.Sc.SumItemDr < d.Cfg.TimeIntervalAll {
+					//
+					if (data.Sc.SumItemDr < d.Cfg.TimeIntervalAll) && (!(data.Sc.ResSheet.Sheet.Operaton == "ПЗР")) && !(strings.Contains(resStr.Operaton, "Бурение") && (!(strings.Contains(data.Sc.ResSheet.Sheet.Operaton, "Бурение")))) && (!(strings.Contains(resStr.Operaton, "Наращивание") && data.Sc.SumItemDr > 120)) {
 						data.Sc.ResSheet.Details = append(data.Sc.ResSheet.Details, *resStr)
 						//len := len(dt.itemNew.resSheet.Details)
 						d.Log.Debug("add new Sheet.Details")
-						d.DataMapId[v.IdWell] = data
+						d.store.DSummSet(v.IdWell, data)
 						continue
 					}
 					len2 := len(data.Sc.ResSheet.Details)
@@ -212,7 +219,7 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 					d.Log.Debug("Start new Sheet.Operaton -before  addSummaryStr(")
 				}
 			}
-			d.DataMapId[v.IdWell] = data
+			d.store.DSummSet(v.IdWell, data)
 		}
 		// len2 := len(data.Sc.ResSheet.Details)
 		// dt.Data.Log.Debug("done and save operation")
@@ -237,24 +244,30 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 func (d *DetermineSummarys) addSummaryStr(keyid string, p *nt.SummarysheetT) *nt.SummarysheetT {
 	rs := nt.SummarysheetT{Sheet: p.Sheet}
 	rs.Details = p.Details[0:len(p.Details)]
-	data := rs.Sheet
+	fillParams(&rs.Sheet)
+	for i := range rs.Details {
+		fillParams(&rs.Details[i])
+	}
+	d.Log.Debugf("addSummaryStr id=%s,rs=%v", keyid, rs)
+	// d.DataMapId[keyid].Summarysheet = append(dt.Data.Summarysheet, rs)
+	return &rs
+
+}
+func fillParams(data *nt.OperationOne) {
 	switch data.Operaton {
 	case "Бурение", "Бурение ротор", "Бурение (слайд)":
-		rs.Sheet.Params =
+		data.Params =
 			fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с,W=%.1fт)",
 				data.StartData.Values[3], data.StopData.Values[3],
 				data.Agv.Values[4], data.Agv.Values[5], data.Agv.Values[6])
 	case "Наращивание":
-		rs.Sheet.Params = fmt.Sprintf(" %.1fсв.", data.StopData.Values[10])
+		data.Params = fmt.Sprintf(" %.1fсв.", data.StopData.Values[10])
 	case "Промывка", "Проработка":
-		rs.Sheet.Params =
+		data.Params =
 			fmt.Sprintf(" в инт. %.1f - %.1fм (Р=%.1fатм,Q=%.1fл/с)",
 				data.StartData.Values[3], data.StopData.Values[3], data.Agv.Values[4], data.Agv.Values[5])
 	case "Подъем", "Спуск":
-		rs.Sheet.Params =
+		data.Params =
 			fmt.Sprintf(" в инт.%.1f - %.1fм", data.StartData.Values[3], data.StopData.Values[3])
 	}
-	// d.DataMapId[keyid].Summarysheet = append(dt.Data.Summarysheet, rs)
-	return &rs
-
 }

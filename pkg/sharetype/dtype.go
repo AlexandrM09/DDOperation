@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 	_ "gopkg.in/yaml.v2"
 )
+const ScapeDataCount=50
 
 type (
 
@@ -62,10 +63,11 @@ type (
 	//ScapeDataD time series data
 	// golang CRUD with gin and ent
 	ScapeDataD struct {
-		Id             string
-		Time           time.Time
-		Count          int
-		Values         [20]float32
+		Id   string
+		SchemaId       int64
+		Time time.Time
+		// Count          int
+		Values         [ScapeDataCount]float32
 		StatusLastData bool
 
 		/*0-Дата Время
@@ -156,4 +158,26 @@ type ResultSheet struct {
 		Flag  int
 		Start time.Time
 	}
+}
+type SaveDetElementary = struct {
+	IdWell               string
+	OperationList        []OperationOne
+	ScapeFullData        bool
+	LastScapeData        ScapeDataD
+	ScapeData            ScapeDataD
+	ActiveOperation      int
+	StartActiveOperation time.Time
+	Temp                 struct {
+		LastToolDepht     float32
+		LastTimeToolDepht time.Time
+		StartDepht        float32
+		LastStartData     ScapeDataD
+		LastTripData      ScapeDataD
+		FlagChangeTrip    int
+	}
+}
+type SummaryResult struct {
+	IdWell       string
+	Summarysheet []SummarysheetT
+	Sc           ResultSheet
 }

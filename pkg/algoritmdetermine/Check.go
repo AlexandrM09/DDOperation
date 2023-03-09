@@ -6,7 +6,8 @@ import (
 	_ "fmt"
 	_ "math"
 	"time"
-	//nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
+
+	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 )
 
 /*
@@ -20,6 +21,7 @@ import (
 7 - Бурение (ротор)
 8 - Бурение (слайд)
 9 - ПЗР
+10 - КНБК
 */
 type (
 	//Check0 - drill test condition
@@ -28,7 +30,7 @@ type (
 	Check1 struct{}
 	//Check2 - circulation test condition
 	Check2 struct{}
-	//Check3 - wiper trip (reapeat Check2)
+	//Check3 - borehole reaming (reapeat Check2)
 	Check3 struct{}
 	//Check4 -  making a trip (Up)
 	Check4 struct{}
@@ -38,14 +40,14 @@ type (
 	Check7 struct{}
 	//Check8 - drill slide test condition
 	Check8 struct{}
-	//Check9 - temp operation test condition
+	//Check9 - temp operation test condition (unknown operation)
 	Check9 struct{}
-	//Check10 - KNBK
+	//Check10 - BHA
 	Check10 struct{}
 )
 
 // Check Drill
-func checkOne0(d *DetermineElementary, data *SaveDetElementary) int {
+func checkOne0(d *DetermineElementary, data *nt.SaveDetElementary) int {
 	var res int
 	res = -1
 	n := data.ScapeData.Values[2] - data.ScapeData.Values[3]
@@ -63,7 +65,7 @@ func checkOne0(d *DetermineElementary, data *SaveDetElementary) int {
 }
 
 // Check -making a connection
-func (o *Check1) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check1) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	if detCirculation(d, data) {
 		return -1, false
 	}
@@ -88,13 +90,13 @@ func (o *Check1) Check(d *DetermineElementary, data *SaveDetElementary) (int, bo
 }
 
 // Check - drill test condition
-func (o *Check0) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check0) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	return checkOne0(d, data), false
 
 }
 
 // local circulation test condition
-func checkOne2(d *DetermineElementary, data *SaveDetElementary) int {
+func checkOne2(d *DetermineElementary, data *nt.SaveDetElementary) int {
 	if detCirculation(d, data) {
 		return 2
 	}
@@ -103,7 +105,7 @@ func checkOne2(d *DetermineElementary, data *SaveDetElementary) int {
 }
 
 // Check - circulation test condition
-func (o *Check2) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check2) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	var res, resplus int
 	res = checkOne2(d, data)
 	resplus = checkOne0(d, data)
@@ -113,13 +115,13 @@ func (o *Check2) Check(d *DetermineElementary, data *SaveDetElementary) (int, bo
 	if (res == 2) && (detRotation(d, data)) {
 		return 3, false
 	}
-	d.Log.Debugf(" Check - circulation test condition1 res=%v",res)
+	d.Log.Debugf(" Check - circulation test condition1 res=%v", res)
 	return res, false
 
 }
 
-// Check - wiper trip (reapeat Check2)
-func (o *Check3) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+// Check - borehole reaming (reapeat Check2)
+func (o *Check3) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	var res, resplus int
 	res = -1
 	res = checkOne2(d, data)
@@ -134,7 +136,7 @@ func (o *Check3) Check(d *DetermineElementary, data *SaveDetElementary) (int, bo
 }
 
 // Check -  making a trip (Up)
-func (o *Check4) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check4) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	if (detCirculation(d, data)) || (data.ActiveOperation != 4) {
 		return -1, false // is not making a trip
 	}
@@ -166,7 +168,7 @@ func (o *Check4) Check(d *DetermineElementary, data *SaveDetElementary) (int, bo
 }
 
 // Check -  making a trip (Down)
-func (o *Check5) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check5) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	if (detCirculation(d, data)) || (data.ActiveOperation != 5) {
 		return -1, false
 	} // is not making a trip
@@ -198,17 +200,17 @@ func (o *Check5) Check(d *DetermineElementary, data *SaveDetElementary) (int, bo
 }
 
 // Check - drill rotor test condition
-func (o *Check7) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check7) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	return checkOne0(d, data), false
 }
 
 // Check - drill slide test condition
-func (o *Check8) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check8) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	return checkOne0(d, data), false
 }
 
 // Check - temp operation test condition
-func (o *Check9) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+func (o *Check9) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	res := checkOne9(d, data)
 	d.Log.Debug(" temp operation test condition")
 	if res != 9 {
@@ -263,7 +265,7 @@ func (o *Check9) Check(d *DetermineElementary, data *SaveDetElementary) (int, bo
 	return 9, false
 }
 
-func checkOne9(d *DetermineElementary, data *SaveDetElementary) int {
+func checkOne9(d *DetermineElementary, data *nt.SaveDetElementary) int {
 	res := checkOne0(d, data)
 	if res > -1 {
 		return res
@@ -275,8 +277,8 @@ func checkOne9(d *DetermineElementary, data *SaveDetElementary) int {
 	return 9
 }
 
-// Check - KNBK
-func (o *Check10) Check(d *DetermineElementary, data *SaveDetElementary) (int, bool) {
+// Check - BHA
+func (o *Check10) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	if data.ScapeData.Values[3] < 0.2 {
 		return 9, false
 	} //пзр
@@ -292,7 +294,7 @@ func (o *Check10) Check(d *DetermineElementary, data *SaveDetElementary) (int, b
 
 }
 
-func getLastOp(d *DetermineElementary, data *SaveDetElementary) string {
+func getLastOp(d *DetermineElementary, data *nt.SaveDetElementary) string {
 	if len(data.OperationList) < 2 {
 		return ""
 	}
@@ -300,7 +302,7 @@ func getLastOp(d *DetermineElementary, data *SaveDetElementary) string {
 }
 
 // determination fluid flow
-func detCirculation(d *DetermineElementary, data *SaveDetElementary) bool {
+func detCirculation(d *DetermineElementary, data *nt.SaveDetElementary) bool {
 	// fmt.Printf("d.Cfg=%v\n", d.Cfg)
 	if d.Cfg.PresFlowCheck == 0 {
 		if data.ScapeData.Values[4] > d.Cfg.Pmin {
@@ -315,15 +317,12 @@ func detCirculation(d *DetermineElementary, data *SaveDetElementary) bool {
 
 //determination rotation
 
-func detRotation(d *DetermineElementary, data *SaveDetElementary) bool {
-	if data.ScapeData.Values[9] > d.Cfg.Rotationmin {
-		return true
-	}
-	return false
+func detRotation(d *DetermineElementary, data *nt.SaveDetElementary) bool {
+	return data.ScapeData.Values[9] > d.Cfg.Rotationmin
 }
 
 // tracks the movement of the tool
-func getMoveTrip(d *DetermineElementary, data *SaveDetElementary) (float32, float32, time.Time) {
+func getMoveTrip(d *DetermineElementary, data *nt.SaveDetElementary) (float32, float32, time.Time) {
 	res := (data.ScapeData.Values[3] - data.Temp.LastStartData.Values[3])
 	return res, 0, time.Now()
 }
