@@ -87,9 +87,9 @@ type (
 		// name string
 	}
 	Roundrobin struct {
-		countclients int
-		countworker  int
-		wrk          []rrobin
+		// countclients int
+		countworker int
+		wrk         []rrobin
 	}
 )
 
@@ -334,11 +334,12 @@ func LoadWell(count int) (awells *Wells, er error) {
 	return &t, nil
 }
 func (r *Roundrobin) add(n int) int {
-	if n > r.countclients {
-		res := r.add(n - r.countclients)
-		return res
-	}
-	return n
+	// if n > r.countclients {
+	// 	res := r.add(n - r.countclients)
+	// 	return res
+	// }
+	//r return n
+	return 0
 }
 func (r *Roundrobin) Next() {
 	for i := 1; i <= r.countworker; i++ {

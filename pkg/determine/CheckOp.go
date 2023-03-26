@@ -264,11 +264,11 @@ func (o *Check9) Check(d *nt.DrillDataType) (int, bool) {
 }
 
 func checkOne9(d *nt.DrillDataType) int {
-	res := checkOne0(d)
-	if res > -1 {
-		return res
+	res2 := checkOne0(d)
+	if res2 > -1 {
+		return res2
 	}
-	res = checkOne2(d)
+	res := checkOne2(d)
 	if res > -1 {
 		return res
 	}
