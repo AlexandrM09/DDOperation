@@ -15,7 +15,7 @@ import (
 )
 
 type (
-	listoperation []string
+	// listoperation []string
 	//DetermineOne type
 	determineOne interface {
 		Check(d *nt.DrillDataType) (int, bool)
@@ -45,7 +45,7 @@ func (dt *Determine) Wait() (time.Duration, error) {
 
 	dt.wg.Wait()
 	dt.Data.Log.Info("Determine after Wait()")
-	return time.Now().Sub(dt.startTime), nil
+	return time.Since(dt.startTime), nil
 
 }
 
@@ -141,7 +141,7 @@ func (dt *Determine) Summarysheet() {
 					}
 				}
 			}
-		default:
+			// default:
 		}
 	}
 }
@@ -318,11 +318,12 @@ func (dt *Determine) addSummaryStr(p *nt.SummarysheetT) {
 		}
 		dt.Data.Summarysheet = append(dt.Data.Summarysheet, rs)
 	}
-	return
+	// return
 }
-func (dt *Determine) saveSummaryStr(p *nt.OperationOne) {
-	return
-}
+
+// func (dt *Determine) saveSummaryStr(p *nt.OperationOne) {
+// 	// return
+// }
 
 // GetSummarysheet - return summary sheet
 func (dt *Determine) GetSummarysheet() []nt.SummarysheetT {
@@ -342,13 +343,16 @@ func (dt *Determine) Stop() {
 // LoadConfig - load config file json
 func LoadConfig(path string, cf *nt.ConfigDt) error {
 	file, err := os.Open(path)
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 	if err != nil {
 		return err
 	}
 	decoder := json.NewDecoder(file)
 	//json.Unmarshal()
 	err = decoder.Decode(&cf)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

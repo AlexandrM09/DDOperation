@@ -5,7 +5,7 @@ import (
 
 	_ "fmt"
 	_ "math"
-	"time"
+	_ "time"
 
 	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 )
@@ -321,8 +321,8 @@ func detRotation(d *DetermineElementary, data *nt.SaveDetElementary) bool {
 	return data.ScapeData.Values[9] > d.Cfg.Rotationmin
 }
 
-// tracks the movement of the tool
-func getMoveTrip(d *DetermineElementary, data *nt.SaveDetElementary) (float32, float32, time.Time) {
-	res := (data.ScapeData.Values[3] - data.Temp.LastStartData.Values[3])
-	return res, 0, time.Now()
-}
+// // tracks the movement of the tool
+// func getMoveTrip(d *DetermineElementary, data *nt.SaveDetElementary) (float32, float32, time.Time) {
+// 	res := (data.ScapeData.Values[3] - data.Temp.LastStartData.Values[3])
+// 	return res, 0, time.Now()
+// }

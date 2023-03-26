@@ -91,16 +91,13 @@ func (d *DetermineSummarys) Run(ErrCh chan error) {
 		defer close(DoneInside)
 		d.Wg.Add(1)
 		go d.Read(d.Ctx, DoneInside, ErrCh)
-		for {
-			select {
-			case <-DoneInside:
-				{
-					d.stateRun = false
-					d.Wg.Done()
-					return
-				}
-			}
+		<-DoneInside
+		{
+			d.stateRun = false
+			d.Wg.Done()
+			return
 		}
+
 	}()
 
 }

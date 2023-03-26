@@ -43,7 +43,7 @@ func (St *SteamSmpl) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, D
 		//<-time.After(10 * time.Millisecond)
 	}
 	DoneCh <- struct{}{}
-	return
+	// return
 }
 
 // test steam for csv files
@@ -229,7 +229,7 @@ func TestSimpleDtm(t *testing.T) {
 	fmt.Println("test TestSimpleDtm completed successfully")
 }
 
-func CLog() *logrus.Logger {
+func CLog() (*logrus.Logger,*os.File) {
 	var log = logrus.New()
 
 	log.WithFields(logrus.Fields{
@@ -244,7 +244,7 @@ func CLog() *logrus.Logger {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-	return log
+	return log,file
 
 }
 
@@ -254,7 +254,7 @@ type plainFormatter struct {
 }
 
 func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+	timestamp := fmt.Sprint(entry.Time.Format(f.TimestampFormat))
 	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s \n", f.LevelDesc[entry.Level], timestamp,
 		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message)), nil
 }

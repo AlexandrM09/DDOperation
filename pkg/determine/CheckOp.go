@@ -4,7 +4,7 @@ import (
 	//	_ "fmt"
 	_ "fmt"
 	_ "math"
-	"time"
+	_ "time"
 
 	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 )
@@ -315,14 +315,11 @@ func detCirculation(d *nt.DrillDataType) bool {
 //determination rotation
 
 func detRotation(d *nt.DrillDataType) bool {
-	if d.ScapeData.Values[9] > d.Cfg.Rotationmin {
-		return true
-	}
-	return false
+	return d.ScapeData.Values[9] > d.Cfg.Rotationmin
 }
 
 // tracks the movement of the tool
-func getMoveTrip(d *nt.DrillDataType) (float32, float32, time.Time) {
-	res := (d.ScapeData.Values[3] - d.Temp.LastStartData.Values[3])
-	return res, 0, time.Now()
-}
+// func getMoveTrip(d *nt.DrillDataType) (float32, float32, time.Time) {
+// 	res := (d.ScapeData.Values[3] - d.Temp.LastStartData.Values[3])
+// 	return res, 0, time.Now()
+// }

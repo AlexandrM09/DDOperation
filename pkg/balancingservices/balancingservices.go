@@ -83,8 +83,8 @@ type (
 		Cancel           context.CancelFunc
 	}
 	rrobin = struct {
-		n    int
-		name string
+		n int
+		// name string
 	}
 	Roundrobin struct {
 		countclients int
@@ -186,13 +186,15 @@ func (pW *PoolWell) Run() error {
 		}
 		// close(pW.ServicesCh[topic[2]].In[0])
 	}()
+	tick1 := time.NewTicker(time.Duration(500 * time.Millisecond))
+	defer tick1.Stop()
 	//Пишем ошибки в лог
 	go func() {
 		count := 0
 		for {
 
 			select {
-			case <-time.Tick(time.Duration(500 * time.Millisecond)):
+			case <-tick1.C:
 				{
 					count += 500
 					pW.Log.Infof("duration is %dms", count)
@@ -344,13 +346,13 @@ func (r *Roundrobin) Next() {
 	}
 }
 func (r *Roundrobin) Init() {
-	r.wrk = make([]rrobin, r.countworker, r.countworker)
-	for i := 1; i <= r.countworker; i++ {
-		r.wrk = append(r.wrk, rrobin{
-			n:    i,
-			name: "",
-		})
-	}
+	// r.wrk = make([]rrobin, r.countworker, r.countworker)
+	// for i := 1; i <= r.countworker; i++ {
+	// 	r.wrk = append(r.wrk, rrobin{
+	// 		n:    i,
+	// 		name: "",
+	// 	})
+	// }
 }
 func (r *Roundrobin) Get(n int) int {
 	if (n < 1) || (n > r.countworker) {
@@ -365,7 +367,7 @@ type plainFormatter struct {
 }
 
 func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+	timestamp := fmt.Sprint(entry.Time.Format(f.TimestampFormat))
 	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s \n", f.LevelDesc[entry.Level], timestamp,
 		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message)), nil
 }

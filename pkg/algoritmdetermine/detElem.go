@@ -16,7 +16,7 @@ type (
 	}
 	//SaveDeteElementary
 	store interface {
-		DElementaryGet(id string) (*nt.SaveDetElementary,bool)
+		DElementaryGet(id string) (*nt.SaveDetElementary, bool)
 		DElementarySet(id string, v *nt.SaveDetElementary)
 		DElementaryGetAll() map[string]*nt.SaveDetElementary
 	}
@@ -84,18 +84,19 @@ func (d *DetermineElementary) Run(ErrCh chan error) {
 		defer close(d.doneWait)
 
 		go d.Read(d.ctx, DoneInside, ErrCh)
-		for {
-			select {
+		// for {
+		// select {
 
-			case <-DoneInside:
-				{
-					d.Log.Info("DetermineElementary Run case <-DoneInside done")
-					d.doneWait <- struct{}{}
-					d.Wg.Done()
-					return
-				}
-			}
+		// case <-DoneInside:
+		<-DoneInside
+		{
+			d.Log.Info("DetermineElementary Run case <-DoneInside done")
+			d.doneWait <- struct{}{}
+			d.Wg.Done()
+			return
 		}
+		// }
+		// }
 	}()
 
 }

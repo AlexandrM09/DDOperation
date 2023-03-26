@@ -23,8 +23,10 @@ func main() {
 	if errf != nil {
 		log.Fatal("not load config file")
 	}
+	lg1, file := createLog(logrus.DebugLevel)
+	defer file.Close()
 	sr := nt.DrillDataType{
-		Log: createLog(logrus.DebugLevel),
+		Log: lg1,
 		Cfg: &Cfg,
 	}
 	ctx, Cancel := context.WithTimeout(context.Background(), time.Second*300)
@@ -62,11 +64,11 @@ type plainFormatter struct {
 }
 
 func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+	timestamp := fmt.Sprint(entry.Time.Format(f.TimestampFormat))
 	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s \n", f.LevelDesc[entry.Level], timestamp,
 		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message)), nil
 }
-func createLog(ll logrus.Level) *logrus.Logger {
+func createLog(ll logrus.Level) (*logrus.Logger, *os.File) {
 
 	plainFormatter := new(plainFormatter)
 	plainFormatter.TimestampFormat = "2006-01-02 15:04:05"
@@ -103,6 +105,6 @@ func createLog(ll logrus.Level) *logrus.Logger {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-	return log
+	return log, file
 
 }

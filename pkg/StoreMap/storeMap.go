@@ -20,7 +20,7 @@ type (
 	// Topic = struct {
 	// 	mu       *sync.RWMutex
 	// 	Value    map[string]chan interface{}
-	// 	flagFull bool
+	// 	flagFull boolc
 	// }
 	Topic   = map[string]chan interface{}
 	Brocker struct {

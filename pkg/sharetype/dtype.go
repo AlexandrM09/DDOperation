@@ -7,7 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 	_ "gopkg.in/yaml.v2"
 )
-const ScapeDataCount=50
+
+const ScapeDataCount = 50
 
 type (
 
@@ -63,9 +64,9 @@ type (
 	//ScapeDataD time series data
 	// golang CRUD with gin and ent
 	ScapeDataD struct {
-		Id   string
-		SchemaId       int64
-		Time time.Time
+		Id       string
+		SchemaId int64
+		Time     time.Time
 		// Count          int
 		Values         [ScapeDataCount]float32
 		StatusLastData bool
