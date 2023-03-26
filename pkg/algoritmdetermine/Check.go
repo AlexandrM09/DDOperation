@@ -123,7 +123,7 @@ func (o *Check2) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int,
 // Check - borehole reaming (reapeat Check2)
 func (o *Check3) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	var res, resplus int
-	res = -1
+	// res = -1
 	res = checkOne2(d, data)
 	resplus = checkOne0(d, data)
 	if resplus > -1 {

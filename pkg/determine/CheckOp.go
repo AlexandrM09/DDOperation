@@ -121,7 +121,7 @@ func (o *Check2) Check(d *nt.DrillDataType) (int, bool) {
 // Check - wiper trip (reapeat Check2)
 func (o *Check3) Check(d *nt.DrillDataType) (int, bool) {
 	var res, resplus int
-	res = -1
+	// res = -1
 	res = checkOne2(d)
 	resplus = checkOne0(d)
 	if resplus > -1 {

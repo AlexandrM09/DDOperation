@@ -164,7 +164,7 @@ func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, Do
 			}
 			continue
 		}
-		err = nil
+		// err = nil
 		ScapeData.Time, err = GetTime(line)
 		if !(err == nil) {
 			continue
