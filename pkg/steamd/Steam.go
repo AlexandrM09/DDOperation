@@ -112,13 +112,23 @@ func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, Do
 			ErrCh <- err
 		}
 	}()
-	St.Log.Error("steam id=%s before open file, err=%v ", St.Id, errf)
+	if St != nil {
+		s := St.Id
+		St.Log.Errorf("steam id=%s before open file, err=%v ", s, errf)
+	}
 	if errf != nil {
-		St.Log.Error("steam id=%s not open file, err=%v ", St.Id, errf)
+		if St != nil {
+			s := St.Id
+			St.Log.Errorf("steam id=%s not open file, err=%v ", s, errf)
+		}
 		ErrCh <- err
 		return
 	}
-	St.Log.Infof("id=%s create new reader zip file:%s\n", St.Id, St.FilePath)
+	if St != nil {
+		s1 := St.Id
+		s2 := St.FilePath
+		St.Log.Infof("id=%s create new reader zip file:%s\n", s1, s2)
+	}
 	reader := csv.NewReader(rc)
 	reader.Comma = ';'
 	n := 0
@@ -127,7 +137,7 @@ func (St *SteamCsv) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, Do
 		select {
 		case <-ctx.Done():
 			{
-				St.Log.Info("id=%s on-demand output csv Steam", St.Id)
+				St.Log.Infof("id=%s on-demand output csv Steam", St.Id)
 				return
 			}
 		default:

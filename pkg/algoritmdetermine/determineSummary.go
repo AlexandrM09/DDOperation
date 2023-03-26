@@ -145,7 +145,10 @@ func (d *DetermineSummarys) Read(ctx context.Context, DoneInside chan struct{}, 
 			if resStr.Status == "lastline" {
 				len2 := len(data.Sc.ResSheet.Details)
 				if len2 > 0 {
-					d.Log.Debug("done and save operation idwell=%s", v.IdWell)
+					if v != nil {
+						s := v.IdWell
+						d.Log.Debugf("done and save operation idwell=%s", s)
+					}
 					data.Sc.ResSheet.Sheet.StopData = data.Sc.ResSheet.Details[len2-1].StopData
 					data.Summarysheet = append(data.Summarysheet, *d.addSummaryStr(v.IdWell, &data.Sc.ResSheet))
 					d.store.DSummSet(v.IdWell, data)

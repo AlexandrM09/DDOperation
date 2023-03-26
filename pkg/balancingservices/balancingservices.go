@@ -205,7 +205,7 @@ func (pW *PoolWell) Run() error {
 					return
 				}
 			case err := <-ErrSteam:
-				pW.Log.Errorf("Error", err)
+				pW.Log.Errorf("Error:%v", err)
 
 			}
 		}
