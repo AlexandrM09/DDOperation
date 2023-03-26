@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v1
       - name: Run golangci-lint
-        uses: actions-contrib/golangci-lint@v3 
+        uses: actions-contrib/golangci-lint@v2 
   test:
     name: Run unit tests
     runs-on:  windows-latest
