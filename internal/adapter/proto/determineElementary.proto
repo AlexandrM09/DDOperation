@@ -1,0 +1,70 @@
+syntax = "proto3";
+package v1;
+
+import "google/protobuf/empty.proto";
+
+service DetermineElementary {
+    rpc Run(DetermineElementaryIn)(google.protobuf.Empty){};
+    rpc WaitandGetReault(google.protobuf.Empty) SaveDetElementaryRes;
+    rpc Stop(google.protobuf.Empty)(google.protobuf.Empty){};
+}
+
+message OperationtypeT {
+	string Description = 1; 
+	int64 IdCodeOper = 2;
+}
+
+message ScapeDataD {
+		string Id = 1;
+		int64 SchemaId = 2; 
+		google.protobuf.Timestamp Time = 3;  
+		repeated float32 Values = 4;  
+		boolean StatusLastData = 5; 
+		boolean StatusChangeDate = 6;  
+	}
+
+message OperationOne{
+		string Status = 1;
+		ScapeDataD StartData = 2;
+        ScapeDataD StopData = 3;
+        ScapeDataD MaxData = 4; 
+        ScapeDataD MinData = 5;
+        ScapeDataD Agv = 6; 
+		OperationtypeT Lastchangeoperation = 7;                        
+		int64 Count = 8;                                     
+		OperationtypeT Operaton = 9;                                   
+		string Params = 10;                              
+    }
+
+message TempT{
+    float32  LastToolDepht = 1;     
+	google.protobuf.Timestamp LastTimeToolDepht = 2;  
+	float32	StartDepht = 3;
+	ScapeDataD	LastStartData = 4;     
+	ScapeDataD	LastTripData = 5;  
+	int64	FlagChangeTrip = 6;   
+}        
+
+message SaveDetElementary{
+    string IdWell = 1;               
+	repeated OperationOne OperationList = 2;         
+	boolean ScapeFullData = 3;         
+	ScapeDataD LastScapeData = 4;         
+	ScapeDataD ScapeData = 5;             
+	int64 ActiveOperation = 6;       
+	google.protobuf.Timestamp StartActiveOperation = 7; 
+	TempT Temp = 8;
+}
+
+message SaveDetElementaryRes{
+    repeated SaveDetElementary Items=1;
+}
+
+message DetermineElementaryIn{
+    string Intopic = 1;
+    string Outtopic = 2;
+    string Errtopic = 3;
+    string Port = 4;
+    string Ip = 5;
+}
+

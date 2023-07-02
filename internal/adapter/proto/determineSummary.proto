@@ -1,0 +1,77 @@
+syntax = "proto3";
+package v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service DetermineElementary{
+    rpc Run(DetermineElementaryIn) returns(google.protobuf.Empty){};
+    rpc WaitandGetReault(google.protobuf.Empty) returns(SummaryResultRes);
+    rpc Stop(google.protobuf.Empty) returns(google.protobuf.Empty){};
+}
+
+message OperationtypeT{
+	string Description = 1; 
+	int32 IdCodeOper = 2;
+}
+
+message ScapeDataD{
+		string Id = 1;
+		int32 SchemaId = 2; 
+		google.protobuf.Timestamp Time  = 3;
+		repeated float32 Values = 4; 
+		boolean StatusLastData = 5;
+		boolean StatusChangeDate = 6; 
+	}
+
+message OperationOne{
+		string Status = 1;
+		ScapeDataD StartData = 2;
+        ScapeDataD StopData = 3;
+        ScapeDataD MaxData = 4;
+        ScapeDataD MinData = 5;
+        ScapeDataD Agv = 6; 
+		OperationtypeT Lastchangeoperation = 7;                        
+		int64 Count = 8;                                     
+		OperationtypeT Operaton = 9;                                   
+		string Params = 10;                              
+    }
+
+message SummarysheetT{
+		OperationOne Sheet = 1; 
+		repeated OperationOne Details = 2;   
+	} 
+
+message NextTimeT{
+    int64 Flag = 1;   
+	google.protobuf.Timestamp Start = 2;  
+} 
+
+message ResultSheet{
+	string Id = 1;   
+	SummarysheetT ResSheet = 2;  
+    int64 Firstflag = 3; 
+	int64 Startflag = 4;
+	google.protobuf.Timestamp StartTime = 5; 
+	int64 SumItemDr = 6; 
+	NextTimeT NextTime = 7; 
+}
+      
+message SummaryResult{
+    string IdWell = 1;               
+	repeated SummarysheetT OperationList = 2;        
+	ResultSheet Sc = 3;       
+}
+
+message SummaryResultRes{
+    repeated SummaryResult Items = 1;
+}
+
+message DetermineSummryIn{
+    string Intopic = 1;
+    string Outtopic = 2;
+    string Errtopic = 3;
+    string Port = 4;
+    string Ip = 5;
+}
+

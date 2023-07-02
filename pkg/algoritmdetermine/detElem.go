@@ -86,7 +86,6 @@ func (d *DetermineElementary) Run(ErrCh chan error) {
 		go d.Read(d.ctx, DoneInside, ErrCh)
 		// for {
 		// select {
-
 		// case <-DoneInside:
 		<-DoneInside
 		{
@@ -179,7 +178,6 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 	defer func() {
 		DoneInside <- struct{}{}
 		close(d.Out)
-
 		d.Log.Infof("Exit read DetermineElementary,close(d.Out)")
 	}()
 	d.Log.Infof("Start Run DetEl ")
@@ -199,7 +197,6 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 	defer close(localdone)
 	go func() {
 		for g := range d.In {
-
 			tmp, ok := g.(nt.ScapeDataD)
 			if !ok {
 				d.Log.Debugf("data casting failed")
@@ -264,7 +261,6 @@ func (d *DetermineElementary) Read(ctx context.Context, DoneInside chan struct{}
 						d.startnewoperation(data, data.IdWell)
 						d.addDatatooperation(data, data.IdWell, 0)
 					}
-
 					if changeOp {
 						changeOp = false
 					}
