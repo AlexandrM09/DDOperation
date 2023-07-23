@@ -1,0 +1,1 @@
+go run cmd\cli2\main.go

@@ -1,6 +1,7 @@
 package determine
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -18,10 +19,10 @@ import (
 // simle steam
 type SteamSmpl struct{}
 
-//function return simple fake ScapeDate for TestSimpleDtm
-func (St *SteamSmpl) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan struct{}, ErrCh chan error) {
+// function return simple fake ScapeDate for TestSimpleDtm
+func (St *SteamSmpl) Read(ctx context.Context, ScapeDataCh chan nt.ScapeDataD, DoneCh chan struct{}, ErrCh chan error) {
 	//nothing
-	v1 := [20]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	v1 := [50]float32{0, 0, 100, 90, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
 	//flow data
 	v2 := v1
 	v2[4] = 50
@@ -42,22 +43,22 @@ func (St *SteamSmpl) Read(ScapeDataCh chan nt.ScapeDataD, DoneCh, Done chan stru
 		//<-time.After(10 * time.Millisecond)
 	}
 	DoneCh <- struct{}{}
-	return
+	// return
 }
 
-//test steam for csv files
+// test steam for csv files
 func TestSteamCsv(t *testing.T) {
 	var Scd nt.ScapeDataD
 	ScapeDataCh := make(chan nt.ScapeDataD)
 	DoneCh := make(chan struct{})
-	Done := make(chan struct{})
 	ErrCh := make(chan error)
 
 	SteamCsv := &steam.SteamCsv{
 		FilePath: "./source.zip",
 		Log:      createLog(logrus.DebugLevel),
 	}
-	go SteamCsv.Read(ScapeDataCh, DoneCh, Done, ErrCh)
+	ctx := context.Background()
+	go SteamCsv.Read(ctx, ScapeDataCh, DoneCh, ErrCh)
 	fmt.Println("start test TestSteamCsv")
 	//data := []byte("Hello Bold!")
 	file, err := os.Create("operation.txt")
@@ -108,12 +109,13 @@ func TestElementaryDtm(t *testing.T) {
 		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
-
-	tm := NewDetermine(&sr, &steam.SteamCsv{
+	ctx, Cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer Cancel()
+	tm := NewDetermine(ctx, &sr, &steam.SteamCsv{
 		FilePath: "./source1.zip",
 		Log:      sr.Log})
 	//err := tm.Start(120)
-	dur, err := tm.Start(300)
+	dur, err := tm.Start()
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	//err := tm.Wait()
@@ -173,7 +175,7 @@ func TestElementaryDtm(t *testing.T) {
 	fmt.Println("test TestElementaryDtm completed successfully")
 }
 
-//very simple determine test
+// very simple determine test
 func TestSimpleDtm(t *testing.T) {
 	fmt.Println("Start test TestSimpleDtm")
 
@@ -187,10 +189,11 @@ func TestSimpleDtm(t *testing.T) {
 		Log: createLog(logrus.DebugLevel),
 		Cfg: &Cfg,
 	}
-
-	tm := NewDetermine(&sr, &SteamSmpl{})
+	ctx, Cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer Cancel()
+	tm := NewDetermine(ctx, &sr, &SteamSmpl{})
 	//err := tm.Start(120)
-	dur, err := tm.Start(300)
+	dur, err := tm.Start()
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	//err := tm.Wait()
@@ -226,7 +229,7 @@ func TestSimpleDtm(t *testing.T) {
 	fmt.Println("test TestSimpleDtm completed successfully")
 }
 
-func CLog() *logrus.Logger {
+func CLog() (*logrus.Logger,*os.File) {
 	var log = logrus.New()
 
 	log.WithFields(logrus.Fields{
@@ -241,7 +244,7 @@ func CLog() *logrus.Logger {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-	return log
+	return log,file
 
 }
 
@@ -251,7 +254,7 @@ type plainFormatter struct {
 }
 
 func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+	timestamp := fmt.Sprint(entry.Time.Format(f.TimestampFormat))
 	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s \n", f.LevelDesc[entry.Level], timestamp,
 		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message)), nil
 }

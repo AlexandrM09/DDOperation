@@ -2,23 +2,26 @@ package algoritmdetermine
 
 import (
 	//	_ "fmt"
+
 	_ "fmt"
 	_ "math"
-	"time"
-	//nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
+	_ "time"
+
+	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 )
 
 /*
-   0 - Бурение
-   1 - Наращивание
-   2 - Промывка
-   3 - Проработка
-   4 - Подъем
-   5 - Спуск
-   6 - Работа т/с
-   7 - Бурение (ротор)
-   8 - Бурение (слайд)
-   9 - ПЗР
+0 - Бурение
+1 - Наращивание
+2 - Промывка
+3 - Проработка
+4 - Подъем
+5 - Спуск
+6 - Работа т/с
+7 - Бурение (ротор)
+8 - Бурение (слайд)
+9 - ПЗР
+10 - КНБК
 */
 type (
 	//Check0 - drill test condition
@@ -27,7 +30,7 @@ type (
 	Check1 struct{}
 	//Check2 - circulation test condition
 	Check2 struct{}
-	//Check3 - wiper trip (reapeat Check2)
+	//Check3 - borehole reaming (reapeat Check2)
 	Check3 struct{}
 	//Check4 -  making a trip (Up)
 	Check4 struct{}
@@ -37,21 +40,20 @@ type (
 	Check7 struct{}
 	//Check8 - drill slide test condition
 	Check8 struct{}
-	//Check9 - temp operation test condition
+	//Check9 - temp operation test condition (unknown operation)
 	Check9 struct{}
-	//Check10 - KNBK
+	//Check10 - BHA
 	Check10 struct{}
 )
 
-//
 // Check Drill
-func checkOne0(d *DetermineElementary) int {
+func checkOne0(d *DetermineElementary, data *nt.SaveDetElementary) int {
 	var res int
 	res = -1
-	n := d.data.ScapeData.Values[2] - d.data.ScapeData.Values[3]
-	if (checkOne2(d) == 2) && (n < d.Cfg.DephtTool) {
+	n := data.ScapeData.Values[2] - data.ScapeData.Values[3]
+	if (checkOne2(d, data) == 2) && (n < d.Cfg.DephtTool) {
 		if d.Cfg.RotorSl > 0 {
-			if detRotation(d) {
+			if detRotation(d, data) {
 				return 7
 			}
 			return 8
@@ -62,22 +64,22 @@ func checkOne0(d *DetermineElementary) int {
 
 }
 
-//Check -making a connection
-func (o *Check1) Check(d *DetermineElementary) (int, bool) {
-	if detCirculation(d) {
+// Check -making a connection
+func (o *Check1) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	if detCirculation(d, data) {
 		return -1, false
 	}
-	nz := d.data.ScapeData.Values[2] - d.data.ScapeData.Values[3]
-	if (nz > 13) && (d.data.ScapeData.Values[2] < 10) {
+	nz := data.ScapeData.Values[2] - data.ScapeData.Values[3]
+	if (nz > 13) && (data.ScapeData.Values[2] < 10) {
 		return 9, false
 	}
 	if nz < d.Cfg.Avgstand {
-		if d.data.ActiveOperation != 1 {
+		if data.ActiveOperation != 1 {
 			return 1, false
 		}
 	}
-	if d.data.ActiveOperation == 1 {
-		duratOp := int(d.data.ScapeData.Time.Sub(d.data.StartActiveOperation).Seconds())
+	if data.ActiveOperation == 1 {
+		duratOp := int(data.ScapeData.Time.Sub(data.StartActiveOperation).Seconds())
 		if duratOp < d.Cfg.TimeIntervalMaxMkconn {
 			return 1, false
 		}
@@ -87,169 +89,169 @@ func (o *Check1) Check(d *DetermineElementary) (int, bool) {
 
 }
 
-//Check - drill test condition
-func (o *Check0) Check(d *DetermineElementary) (int, bool) {
-	return checkOne0(d), false
+// Check - drill test condition
+func (o *Check0) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	return checkOne0(d, data), false
 
 }
 
 // local circulation test condition
-func checkOne2(d *DetermineElementary) int {
-	if detCirculation(d) {
+func checkOne2(d *DetermineElementary, data *nt.SaveDetElementary) int {
+	if detCirculation(d, data) {
 		return 2
 	}
 	return -1
 
 }
 
-//Check - circulation test condition
-func (o *Check2) Check(d *DetermineElementary) (int, bool) {
+// Check - circulation test condition
+func (o *Check2) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	var res, resplus int
-	res = checkOne2(d)
-	resplus = checkOne0(d)
+	res = checkOne2(d, data)
+	resplus = checkOne0(d, data)
 	if resplus > -1 {
 		return resplus, false
 	}
-	if (res == 2) && (detRotation(d)) {
+	if (res == 2) && (detRotation(d, data)) {
 		return 3, false
 	}
-	d.Log.Debug(" Check - circulation test condition ")
+	d.Log.Debugf(" Check - circulation test condition1 res=%v", res)
 	return res, false
 
 }
 
-//Check - wiper trip (reapeat Check2)
-func (o *Check3) Check(d *DetermineElementary) (int, bool) {
+// Check - borehole reaming (reapeat Check2)
+func (o *Check3) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
 	var res, resplus int
-	res = -1
-	res = checkOne2(d)
-	resplus = checkOne0(d)
+	// res = -1
+	res = checkOne2(d, data)
+	resplus = checkOne0(d, data)
 	if resplus > -1 {
 		return resplus, false
 	}
-	if (res == 2) && detRotation(d) {
+	if (res == 2) && detRotation(d, data) {
 		return 3, false
 	}
 	return res, false
 }
 
-//Check -  making a trip (Up)
-func (o *Check4) Check(d *DetermineElementary) (int, bool) {
-	if (detCirculation(d)) || (d.data.ActiveOperation != 4) {
+// Check -  making a trip (Up)
+func (o *Check4) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	if (detCirculation(d, data)) || (data.ActiveOperation != 4) {
 		return -1, false // is not making a trip
 	}
-	deltaDepht := d.data.Temp.LastTripData.Values[3] - d.data.ScapeData.Values[3]
+	deltaDepht := data.Temp.LastTripData.Values[3] - data.ScapeData.Values[3]
 	d.Log.Debug(" making a trip (Up) ")
 	if deltaDepht < 0.005 {
-		duratOp := int(d.data.ScapeData.Time.Sub(d.data.Temp.LastTripData.Time).Seconds())
+		duratOp := int(data.ScapeData.Time.Sub(data.Temp.LastTripData.Time).Seconds())
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to send LastTripData
-			d.data.Temp.FlagChangeTrip = 1
+			data.Temp.FlagChangeTrip = 1
 			d.Log.Debug("  (Up) if duratOp > d.Cfg.TimeIntervalMkTrip { ")
 			return 9, false
 		}
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to send LastTripData
-			d.data.Temp.FlagChangeTrip = 1
-			d.Log.Debug("  (Up) if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) ")
+			data.Temp.FlagChangeTrip = 1
+			d.Log.Debug("  (Up) if (-deltaDepht) > float32.MinLenforTrip) ")
 			return 5, false
 		}
 		return 4, false
 	}
 	if deltaDepht > 0 {
 		//That is all right
-		d.data.Temp.LastTripData = d.data.ScapeData
+		data.Temp.LastTripData = data.ScapeData
 		return 4, false
 	}
 
 	return -1, false
 }
 
-//Check -  making a trip (Down)
-func (o *Check5) Check(d *DetermineElementary) (int, bool) {
-	if (detCirculation(d)) || (d.data.ActiveOperation != 5) {
+// Check -  making a trip (Down)
+func (o *Check5) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	if (detCirculation(d, data)) || (data.ActiveOperation != 5) {
 		return -1, false
 	} // is not making a trip
-	deltaDepht := d.data.ScapeData.Values[3] - d.data.Temp.LastTripData.Values[3]
+	deltaDepht := data.ScapeData.Values[3] - data.Temp.LastTripData.Values[3]
 	d.Log.Debug(" making a trip (Down) ")
 	if deltaDepht < 0.005 {
-		duratOp := int(d.data.ScapeData.Time.Sub(d.data.Temp.LastTripData.Time).Seconds())
+		duratOp := int(data.ScapeData.Time.Sub(data.Temp.LastTripData.Time).Seconds())
 		if duratOp > d.Cfg.TimeIntervalMkTrip {
 			//you need to pass LastTripData
-			d.data.Temp.FlagChangeTrip = 1
+			data.Temp.FlagChangeTrip = 1
 			d.Log.Debug(" (Down) if duratOp > d.Cfg.TimeIntervalMkTrip {")
 			return 9, false
 		}
 		if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {
 			///you need to pass LastTripData
 			d.Log.Debug(" (Down) if (-deltaDepht) > float32(d.Cfg.MinLenforTrip) {")
-			d.data.Temp.FlagChangeTrip = 1
+			data.Temp.FlagChangeTrip = 1
 			return 4, false
 		}
 		return 5, false
 	}
 	if deltaDepht > 0 {
 		//That is all right
-		d.data.Temp.LastTripData = d.data.ScapeData
+		data.Temp.LastTripData = data.ScapeData
 		return 5, false
 	}
 	d.Log.Debug(" return -1, false")
 	return -1, false
 }
 
-//Check - drill rotor test condition
-func (o *Check7) Check(d *DetermineElementary) (int, bool) {
-	return checkOne0(d), false
+// Check - drill rotor test condition
+func (o *Check7) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	return checkOne0(d, data), false
 }
 
-//Check - drill slide test condition
-func (o *Check8) Check(d *DetermineElementary) (int, bool) {
-	return checkOne0(d), false
+// Check - drill slide test condition
+func (o *Check8) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	return checkOne0(d, data), false
 }
 
-//Check - temp operation test condition
-func (o *Check9) Check(d *DetermineElementary) (int, bool) {
-	res := checkOne9(d)
+// Check - temp operation test condition
+func (o *Check9) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	res := checkOne9(d, data)
 	d.Log.Debug(" temp operation test condition")
 	if res != 9 {
 		return res, false
 	}
 
-	if d.data.ActiveOperation == 9 {
+	if data.ActiveOperation == 9 {
 
 		d.Log.Debug(" if d.ActiveOperation == 9 { ")
-		if d.data.ScapeData.Values[10] == 0 {
+		if data.ScapeData.Values[10] == 0 {
 			d.Log.Debug("if d.ScapeData.Values[10] == 0")
-			if d.data.ScapeData.Values[3] < 0.2 {
+			if data.ScapeData.Values[3] < 0.2 {
 
 				return 9, false
 			} //пзр
-			if getLastOp(d) != d.Cfg.Operationtype[10] {
+			if getLastOp(d, data) != d.Cfg.Operationtype[10] {
 				return 10, false
 			} //KNBK
 		}
 		//SPO
 		d.Log.Debug("SPO")
-		nz := d.data.ScapeData.Values[2] - d.data.ScapeData.Values[3]
-		if d.data.ScapeData.Values[10] < d.data.Temp.LastStartData.Values[10] {
+		nz := data.ScapeData.Values[2] - data.ScapeData.Values[3]
+		if data.ScapeData.Values[10] < data.Temp.LastStartData.Values[10] {
 			if nz < 13 {
 				return 1, true
 			}
-			d.data.Temp.LastTripData = d.data.ScapeData
+			data.Temp.LastTripData = data.ScapeData
 			d.Log.Debug("if d.ScapeData.Values[10] < d.temp.LastStartData.Values[10] {")
-			duratOp := int(d.data.ScapeData.Time.Sub(d.data.StartActiveOperation).Seconds())
+			duratOp := int(data.ScapeData.Time.Sub(data.StartActiveOperation).Seconds())
 			if duratOp < d.Cfg.TimeIntervalAll {
 				return 4, true
 			}
 			return 4, false
 		}
-		if d.data.ScapeData.Values[10] > d.data.Temp.LastStartData.Values[10] {
+		if data.ScapeData.Values[10] > data.Temp.LastStartData.Values[10] {
 			if nz < 13 {
 				return 1, true
 			}
-			duratOp := int(d.data.ScapeData.Time.Sub(d.data.StartActiveOperation).Seconds())
+			duratOp := int(data.ScapeData.Time.Sub(data.StartActiveOperation).Seconds())
 			d.Log.Debug(" Candel now > candel last ")
-			d.data.Temp.LastTripData = d.data.ScapeData
+			data.Temp.LastTripData = data.ScapeData
 			if duratOp < d.Cfg.TimeIntervalAll {
 				return 5, true
 			}
@@ -257,57 +259,57 @@ func (o *Check9) Check(d *DetermineElementary) (int, bool) {
 		}
 
 	}
-	if d.data.ActiveOperation != 9 {
-		d.data.Temp.LastStartData = d.data.ScapeData
+	if data.ActiveOperation != 9 {
+		data.Temp.LastStartData = data.ScapeData
 	}
 	return 9, false
 }
 
-func checkOne9(d *DetermineElementary) int {
-	res := checkOne0(d)
+func checkOne9(d *DetermineElementary, data *nt.SaveDetElementary) int {
+	res := checkOne0(d, data)
 	if res > -1 {
 		return res
 	}
-	res = checkOne2(d)
+	res = checkOne2(d, data)
 	if res > -1 {
 		return res
 	}
 	return 9
 }
 
-//Check - KNBK
-func (o *Check10) Check(d *DetermineElementary) (int, bool) {
-	if d.data.ScapeData.Values[3] < 0.2 {
+// Check - BHA
+func (o *Check10) Check(d *DetermineElementary, data *nt.SaveDetElementary) (int, bool) {
+	if data.ScapeData.Values[3] < 0.2 {
 		return 9, false
 	} //пзр
-	if d.data.ScapeData.Values[10] > 0 {
-		d.data.Temp.LastTripData = d.data.ScapeData
+	if data.ScapeData.Values[10] > 0 {
+		data.Temp.LastTripData = data.ScapeData
 		return 5, false
 	}
-	duratOp := int(d.data.ScapeData.Time.Sub(d.data.Temp.LastStartData.Time).Seconds())
-	if d.data.ActiveOperation == 10 && duratOp > d.Cfg.TimeIntervalKNBK {
+	duratOp := int(data.ScapeData.Time.Sub(data.Temp.LastStartData.Time).Seconds())
+	if data.ActiveOperation == 10 && duratOp > d.Cfg.TimeIntervalKNBK {
 		return 9, false
 	}
 	return 10, false //KNBK
 
 }
 
-//
-func getLastOp(d *DetermineElementary) string {
-	if len(d.data.OperationList) < 2 {
+func getLastOp(d *DetermineElementary, data *nt.SaveDetElementary) string {
+	if len(data.OperationList) < 2 {
 		return ""
 	}
-	return d.data.OperationList[len(d.data.OperationList)-2].Operaton
+	return data.OperationList[len(data.OperationList)-2].Operaton
 }
 
 // determination fluid flow
-func detCirculation(d *DetermineElementary) bool {
+func detCirculation(d *DetermineElementary, data *nt.SaveDetElementary) bool {
+	// fmt.Printf("d.Cfg=%v\n", d.Cfg)
 	if d.Cfg.PresFlowCheck == 0 {
-		if d.data.ScapeData.Values[4] > d.Cfg.Pmin {
+		if data.ScapeData.Values[4] > d.Cfg.Pmin {
 			return true
 		}
 	}
-	if d.data.ScapeData.Values[5] > d.Cfg.Flowmin {
+	if data.ScapeData.Values[5] > d.Cfg.Flowmin {
 		return true
 	}
 	return false
@@ -315,15 +317,12 @@ func detCirculation(d *DetermineElementary) bool {
 
 //determination rotation
 
-func detRotation(d *DetermineElementary) bool {
-	if d.data.ScapeData.Values[9] > d.Cfg.Rotationmin {
-		return true
-	}
-	return false
+func detRotation(d *DetermineElementary, data *nt.SaveDetElementary) bool {
+	return data.ScapeData.Values[9] > d.Cfg.Rotationmin
 }
 
-// tracks the movement of the tool
-func getMoveTrip(d *DetermineElementary) (float32, float32, time.Time) {
-	res := (d.data.ScapeData.Values[3] - d.data.Temp.LastStartData.Values[3])
-	return res, 0, time.Now()
-}
+// // tracks the movement of the tool
+// func getMoveTrip(d *DetermineElementary, data *nt.SaveDetElementary) (float32, float32, time.Time) {
+// 	res := (data.ScapeData.Values[3] - data.Temp.LastStartData.Values[3])
+// 	return res, 0, time.Now()
+// }

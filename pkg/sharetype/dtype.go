@@ -8,6 +8,8 @@ import (
 	_ "gopkg.in/yaml.v2"
 )
 
+const ScapeDataCount = 50
+
 type (
 
 	//DrillDataType drill basic data struct
@@ -19,7 +21,6 @@ type (
 		ScapeDataCh     chan ScapeDataD
 		ErrCh           chan error
 		DoneCh          chan struct{}
-		Done            chan struct{}
 		TimelimitCh     chan struct{}
 		DoneSummary     chan struct{}
 		ScapeFullData   bool
@@ -61,11 +62,14 @@ type (
 	*/
 	OperationtypeD [15]string
 	//ScapeDataD time series data
+	// golang CRUD with gin and ent
 	ScapeDataD struct {
-		Id     string
-		Time   time.Time
-		Count  int
-		Values [20]float32
+		Id       string
+		SchemaId int64
+		Time     time.Time
+		// Count          int
+		Values         [ScapeDataCount]float32
+		StatusLastData bool
 
 		/*0-Дата Время
 		  1-Время Дата
@@ -90,6 +94,11 @@ type (
 		Operaton                                   string
 		Params                                     string
 	}
+	//OperationOne for sending other servises
+	SendingTopicDeterm struct {
+		IdWell    string
+		Operation OperationOne
+	}
 )
 
 /*
@@ -103,14 +112,14 @@ var DrillOperationConst = [15]string{"Бурение",
 	"Бурение (ротор)", "Бурение (слайд)", "ПЗР", "", "", "", "", ""}
 */
 
-//ScapeParamtype - scape parametrs yaml
+// ScapeParamtype - scape parametrs yaml
 type ScapeParamtype struct {
 	Name  string  `yaml:"Name"`
 	Gid   int     `yaml:"Gid"`
 	Delta float32 `yaml:"Delta"`
 }
 
-//ConfigDt - configuration structure yaml type
+// ConfigDt - configuration structure yaml type
 type ConfigDt struct {
 	Pmin                     float32          `yaml:"Pmin"`
 	Flowmin                  float32          `yaml:"Flowmin"`
@@ -136,26 +145,40 @@ type ConfigDt struct {
 	Operationtype            [15]string       `yaml:"Operationtype"`
 }
 
-/*
-type ConfigDt struct {
-	Pmin                     float32 `json:"Pmin"`
-	Flowmin                  float32 `json:"Flowmin"`
-	PresFlowCheck            int     `json:"PresFlowCheck"`
-	DephtTool                float32 `json:"DephtTool"`
-	RotorSl                  int     `json:"RotorSl"`
-	DirectionalCheck         int     `json:"DirectionalCheck"`
-	BeforeDrillString        string
-	ShowParamRotSl           int     `json:"ShowParamRotSl"`
-	ShowParamCircl           int     `json:"ShowParamCircl"`
-	ShowParamWiper           int     `json:"ShowParamWiper"`
-	ChangeCircWiperfromDrill int     `json:"ChangeCircWiperfromDrill"`
-	Avgstand                 float32 `json:"Avgstand"`
-	Wbitmax                  float32 `json:"Wbitmax"`
-	Pressmax                 float32 `json:"Pressmax"`
-	TimeIntervalAll          int     `json:"TimeIntervalAll"`
-	TimeIntervalMkTrip       int     `json:"TimeIntervalMkTrip"`
-	MinLenforTrip            int     `json:"MinLenforTrip"`
-	ScapeParam               []ScapeParamtype
-	Operationtype [15]string
+type ResultSheet struct {
+	Id        string
+	ResSheet  SummarysheetT
+	Firstflag int
+	Startflag int
+	StartTime time.Time
+	//stopTime  time.Time
+	SumItemDr int
+	//res       OperationOne
+	//next     nt.OperationOne
+	NextTime struct {
+		Flag  int
+		Start time.Time
+	}
 }
-*/
+type SaveDetElementary = struct {
+	IdWell               string
+	OperationList        []OperationOne
+	ScapeFullData        bool
+	LastScapeData        ScapeDataD
+	ScapeData            ScapeDataD
+	ActiveOperation      int
+	StartActiveOperation time.Time
+	Temp                 struct {
+		LastToolDepht     float32
+		LastTimeToolDepht time.Time
+		StartDepht        float32
+		LastStartData     ScapeDataD
+		LastTripData      ScapeDataD
+		FlagChangeTrip    int
+	}
+}
+type SummaryResult struct {
+	IdWell       string
+	Summarysheet []SummarysheetT
+	Sc           ResultSheet
+}

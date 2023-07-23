@@ -4,22 +4,22 @@ import (
 	//	_ "fmt"
 	_ "fmt"
 	_ "math"
-	"time"
+	_ "time"
 
 	nt "github.com/AlexandrM09/DDOperation/pkg/sharetype"
 )
 
 /*
-   0 - Бурение
-   1 - Наращивание
-   2 - Промывка
-   3 - Проработка
-   4 - Подъем
-   5 - Спуск
-   6 - Работа т/с
-   7 - Бурение (ротор)
-   8 - Бурение (слайд)
-   9 - ПЗР
+0 - Бурение
+1 - Наращивание
+2 - Промывка
+3 - Проработка
+4 - Подъем
+5 - Спуск
+6 - Работа т/с
+7 - Бурение (ротор)
+8 - Бурение (слайд)
+9 - ПЗР
 */
 type (
 	//Check0 - drill test condition
@@ -44,7 +44,6 @@ type (
 	Check10 struct{}
 )
 
-//
 // Check Drill
 func checkOne0(d *nt.DrillDataType) int {
 	var res int
@@ -63,7 +62,7 @@ func checkOne0(d *nt.DrillDataType) int {
 
 }
 
-//Check -making a connection
+// Check -making a connection
 func (o *Check1) Check(d *nt.DrillDataType) (int, bool) {
 	if detCirculation(d) {
 		return -1, false
@@ -88,7 +87,7 @@ func (o *Check1) Check(d *nt.DrillDataType) (int, bool) {
 
 }
 
-//Check - drill test condition
+// Check - drill test condition
 func (o *Check0) Check(d *nt.DrillDataType) (int, bool) {
 	return checkOne0(d), false
 
@@ -103,7 +102,7 @@ func checkOne2(d *nt.DrillDataType) int {
 
 }
 
-//Check - circulation test condition
+// Check - circulation test condition
 func (o *Check2) Check(d *nt.DrillDataType) (int, bool) {
 	var res, resplus int
 	res = checkOne2(d)
@@ -114,15 +113,15 @@ func (o *Check2) Check(d *nt.DrillDataType) (int, bool) {
 	if (res == 2) && (detRotation(d)) {
 		return 3, false
 	}
-	d.Log.Debug(" Check - circulation test condition ")
+	d.Log.Debug(" Check - circulation test condition2 ")
 	return res, false
 
 }
 
-//Check - wiper trip (reapeat Check2)
+// Check - wiper trip (reapeat Check2)
 func (o *Check3) Check(d *nt.DrillDataType) (int, bool) {
 	var res, resplus int
-	res = -1
+	// res = -1
 	res = checkOne2(d)
 	resplus = checkOne0(d)
 	if resplus > -1 {
@@ -134,7 +133,7 @@ func (o *Check3) Check(d *nt.DrillDataType) (int, bool) {
 	return res, false
 }
 
-//Check -  making a trip (Up)
+// Check -  making a trip (Up)
 func (o *Check4) Check(d *nt.DrillDataType) (int, bool) {
 	if (detCirculation(d)) || (d.ActiveOperation != 4) {
 		return -1, false // is not making a trip
@@ -166,7 +165,7 @@ func (o *Check4) Check(d *nt.DrillDataType) (int, bool) {
 	return -1, false
 }
 
-//Check -  making a trip (Down)
+// Check -  making a trip (Down)
 func (o *Check5) Check(d *nt.DrillDataType) (int, bool) {
 	if (detCirculation(d)) || (d.ActiveOperation != 5) {
 		return -1, false
@@ -198,17 +197,17 @@ func (o *Check5) Check(d *nt.DrillDataType) (int, bool) {
 	return -1, false
 }
 
-//Check - drill rotor test condition
+// Check - drill rotor test condition
 func (o *Check7) Check(d *nt.DrillDataType) (int, bool) {
 	return checkOne0(d), false
 }
 
-//Check - drill slide test condition
+// Check - drill slide test condition
 func (o *Check8) Check(d *nt.DrillDataType) (int, bool) {
 	return checkOne0(d), false
 }
 
-//Check - temp operation test condition
+// Check - temp operation test condition
 func (o *Check9) Check(d *nt.DrillDataType) (int, bool) {
 	res := checkOne9(d)
 	d.Log.Debug(" temp operation test condition")
@@ -265,18 +264,18 @@ func (o *Check9) Check(d *nt.DrillDataType) (int, bool) {
 }
 
 func checkOne9(d *nt.DrillDataType) int {
-	res := checkOne0(d)
-	if res > -1 {
-		return res
+	res2 := checkOne0(d)
+	if res2 > -1 {
+		return res2
 	}
-	res = checkOne2(d)
+	res := checkOne2(d)
 	if res > -1 {
 		return res
 	}
 	return 9
 }
 
-//Check - KNBK
+// Check - KNBK
 func (o *Check10) Check(d *nt.DrillDataType) (int, bool) {
 	if d.ScapeData.Values[3] < 0.2 {
 		return 9, false
@@ -293,7 +292,6 @@ func (o *Check10) Check(d *nt.DrillDataType) (int, bool) {
 
 }
 
-//
 func getLastOp(d *nt.DrillDataType) string {
 	if len(d.OperationList) < 2 {
 		return ""
@@ -317,14 +315,11 @@ func detCirculation(d *nt.DrillDataType) bool {
 //determination rotation
 
 func detRotation(d *nt.DrillDataType) bool {
-	if d.ScapeData.Values[9] > d.Cfg.Rotationmin {
-		return true
-	}
-	return false
+	return d.ScapeData.Values[9] > d.Cfg.Rotationmin
 }
 
 // tracks the movement of the tool
-func getMoveTrip(d *nt.DrillDataType) (float32, float32, time.Time) {
-	res := (d.ScapeData.Values[3] - d.Temp.LastStartData.Values[3])
-	return res, 0, time.Now()
-}
+// func getMoveTrip(d *nt.DrillDataType) (float32, float32, time.Time) {
+// 	res := (d.ScapeData.Values[3] - d.Temp.LastStartData.Values[3])
+// 	return res, 0, time.Now()
+// }

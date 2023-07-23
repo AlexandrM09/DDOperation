@@ -22,7 +22,7 @@ ChangeCircWiperfromDrill: 0
 Avgstand: 24.6
 Wbitmax: 13
 Pressmax: 257
-TimeIntervalAll: 90
+TimeIntervalAll: 320
 TimeIntervalMkTrip: 400
 TimeIntervalKNBK: 14400
 TimeIntervalMaxMkconn: 1200

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -22,17 +23,21 @@ func main() {
 	if errf != nil {
 		log.Fatal("not load config file")
 	}
+	lg1, file := createLog(logrus.DebugLevel)
+	defer file.Close()
 	sr := nt.DrillDataType{
-		Log: createLog(logrus.DebugLevel),
+		Log: lg1,
 		Cfg: &Cfg,
 	}
-	tm := dtm.NewDetermine(&sr, &steam.SteamCsv{
+	ctx, Cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer Cancel()
+	tm := dtm.NewDetermine(ctx, &sr, &steam.SteamCsv{
 		FilePath:  "./source/source2.zip",
 		StartTime: "___2019-05-25 17:52:43",
 		Log:       sr.Log,
 	})
 	fmt.Printf("Start determine operation\n")
-	dur, err := tm.Start(300)
+	dur, err := tm.Start()
 	tempt, _ := time.Parse("15:04:01", "00:00:00")
 	fmt.Printf("duration:%s,result err:%v\n", tempt.Add(dur).Format("15:04:00.000"), err)
 	if err != nil {
@@ -59,11 +64,11 @@ type plainFormatter struct {
 }
 
 func (f *plainFormatter) Format(entry *logrus.Entry) ([]byte, error) {
-	timestamp := fmt.Sprintf(entry.Time.Format(f.TimestampFormat))
+	timestamp := fmt.Sprint(entry.Time.Format(f.TimestampFormat))
 	return []byte(fmt.Sprintf("[%s] %s %s:%d  %s \n", f.LevelDesc[entry.Level], timestamp,
 		filepath.Base(entry.Caller.File), entry.Caller.Line, entry.Message)), nil
 }
-func createLog(ll logrus.Level) *logrus.Logger {
+func createLog(ll logrus.Level) (*logrus.Logger, *os.File) {
 
 	plainFormatter := new(plainFormatter)
 	plainFormatter.TimestampFormat = "2006-01-02 15:04:05"
@@ -100,6 +105,6 @@ func createLog(ll logrus.Level) *logrus.Logger {
 	} else {
 		log.Info("Failed to log to file, using default stderr")
 	}
-	return log
+	return log, file
 
 }

@@ -7,9 +7,9 @@
 #проработка - wiper trip
 #инструмент - tool(s),(буровой) drill string 
 #промывка - circulation
-Pmin: 10
+Pmin: 5
 Flowmin: 4
-PresFlowCheck: 0
+PresFlowCheck: 5
 Rotationmin: 7
 DephtTool: 0.01
 RotorSl: 1
@@ -22,8 +22,8 @@ ChangeCircWiperfromDrill: 0
 Avgstand: 24.6
 Wbitmax: 13
 Pressmax: 257
-TimeIntervalAll: 90
-TimeIntervalMkTrip: 400
+TimeIntervalAll: 600
+TimeIntervalMkTrip: 600
 TimeIntervalKNBK: 14400
 TimeIntervalMaxMkconn: 1200
 MinLenforTrip: 30
